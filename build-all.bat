@@ -54,8 +54,8 @@ call mvn clean package -DskipTests
 if %errorlevel% neq 0 exit /b 1
 cd ..\..
 
-echo Building order-service...
-cd order-service\order-service
+echo Building email-service...
+cd email-service\email-service
 call mvn clean package -DskipTests
 if %errorlevel% neq 0 exit /b 1
 cd ..\..

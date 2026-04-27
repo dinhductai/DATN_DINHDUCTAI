@@ -15,7 +15,7 @@ fi
 cd ..
 
 # Build all services
-services=("discovery-server" "api-gateway" "auth-service" "user-service" "task-service" "ai-service" "product-service" "order-service")
+services=("discovery-server" "api-gateway" "auth-service" "user-service" "task-service" "ai-service" "product-service" "email-service")
 
 for service in "${services[@]}"
 do

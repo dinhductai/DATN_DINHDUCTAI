@@ -171,22 +171,22 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  postgres-order-db:
+  postgres-email-db:
     image: postgres:16-alpine
-    container_name: postgres-order-db
-    hostname: postgres-order-db
+    container_name: postgres-email-db
+    hostname: postgres-email-db
     environment:
-      POSTGRES_DB: order_db
+      POSTGRES_DB: email_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
     ports:
       - "5433:5432"
     volumes:
-      - order-db-data:/var/lib/postgresql/data
+      - email-db-data:/var/lib/postgresql/data
     networks:
       - smart-schedule-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d order_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d email_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -349,28 +349,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  order-service:
+  email-service:
     build:
       context: .
-      dockerfile: order-service/order-service/Dockerfile
-    container_name: order-service
-    hostname: order-service
+      dockerfile: email-service/email-service/Dockerfile
+    container_name: email-service
+    hostname: email-service
     ports:
       - "9002:9002"
     networks:
       - smart-schedule-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order-db:5432/order_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-email-db:5432/email_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
     depends_on:
-      postgres-order-db:
+      postgres-email-db:
         condition: service_healthy
-      user-service:
-        condition: service_started
       discovery-server:
         condition: service_healthy
     restart: unless-stopped
@@ -410,7 +412,7 @@ services:
         condition: service_started
       product-service:
         condition: service_started
-      order-service:
+      email-service:
         condition: service_started
     restart: unless-stopped
     logging:
@@ -433,7 +435,7 @@ volumes:
     driver: local
   product-db-data:
     driver: local
-  order-db-data:
+  email-db-data:
     driver: local
 
 

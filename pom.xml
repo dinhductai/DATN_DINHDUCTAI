@@ -19,7 +19,7 @@
         <module>user-service/user-service</module>
         <module>auth-service/auth-service</module>
         <module>task-service/task-service</module>
-        <module>order-service/order-service</module>
+        <module>email-service/email-service</module>
         <module>product-service/product-service</module>
         <module>ai-service/ai-service</module>
         <module>api-gateway/api-gateway</module>
