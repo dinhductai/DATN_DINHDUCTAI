@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Task Today APIs</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test Task Today APIs</h1>
+    
+    <div class="section">
+        <h3>Access Token</h3>
+        <input type="text" id="token" placeholder="Paste JWT token here" style="width: 100%; padding: 8px;">
+    </div>
+
+    <div class="section">
+        <h3>1. GET /today - All tasks today</h3>
+        <button onclick="testTodayTasks()">Test GET /today</button>
+        <pre id="todayResult"></pre>
+    </div>
+
+    <div class="section">
+        <h3>2. GET /today/overdue - Overdue tasks today</h3>
+        <button onclick="testOverdueTasks()">Test GET /today/overdue</button>
+        <pre id="overdueResult"></pre>
+    </div>
+
+    <div class="section">
+        <h3>3. GET /today/completed - Completed tasks today</h3>
+        <button onclick="testCompletedTasks()">Test GET /today/completed</button>
+        <pre id="completedResult"></pre>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:9004/api/tasks';
+
+        function getHeaders() {
+            const token = document.getElementById('token').value;
+            if (!token) {
+                alert('Please enter JWT token first!');
+                return null;
+            }
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function testTodayTasks() {
+            const headers = getHeaders();
+            if (!headers) return;
+
+            const resultEl = document.getElementById('todayResult');
+            resultEl.innerHTML = 'Loading...';
+
+            try {
+                const response = await fetch(`${API_BASE}/today`, { headers });
+                const data = await response.json();
+                
+                resultEl.innerHTML = `Status: ${response.status}\n\n` +
+                    `Count: ${data.length} tasks\n\n` +
+                    `Data:\n${JSON.stringify(data, null, 2)}`;
+                resultEl.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultEl.innerHTML = `Error: ${error.message}`;
+                resultEl.className = 'error';
+            }
+        }
+
+        async function testOverdueTasks() {
+            const headers = getHeaders();
+            if (!headers) return;
+
+            const resultEl = document.getElementById('overdueResult');
+            resultEl.innerHTML = 'Loading...';
+
+            try {
+                const response = await fetch(`${API_BASE}/today/overdue`, { headers });
+                const data = await response.json();
+                
+                resultEl.innerHTML = `Status: ${response.status}\n\n` +
+                    `Count: ${data.length} overdue tasks\n\n` +
+                    `Data:\n${JSON.stringify(data, null, 2)}`;
+                resultEl.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultEl.innerHTML = `Error: ${error.message}`;
+                resultEl.className = 'error';
+            }
+        }
+
+        async function testCompletedTasks() {
+            const headers = getHeaders();
+            if (!headers) return;
+
+            const resultEl = document.getElementById('completedResult');
+            resultEl.innerHTML = 'Loading...';
+
+            try {
+                const response = await fetch(`${API_BASE}/today/completed`, { headers });
+                const data = await response.json();
+                
+                resultEl.innerHTML = `Status: ${response.status}\n\n` +
+                    `Count: ${data.length} completed tasks\n\n` +
+                    `Data:\n${JSON.stringify(data, null, 2)}`;
+                resultEl.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultEl.innerHTML = `Error: ${error.message}`;
+                resultEl.className = 'error';
+            }
+        }
+
+        // Display current timezone info
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const offset = -now.getTimezoneOffset() / 60;
+            console.log(`Browser timezone: GMT${offset >= 0 ? '+' : ''}${offset}`);
+            console.log(`Current time: ${now.toISOString()}`);
+        });
+    </script>
+</body>
+</html>

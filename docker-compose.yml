@@ -1,0 +1,659 @@
+version: '3.8'
+
+# ════════════════════════════════════════════════════════════
+# NETWORKS: Tạo isolated network cho microservices
+# ════════════════════════════════════════════════════════════
+networks:
+  smart-schedule-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ════════════════════════════════════════════════════════════
+# SERVICES
+# ════════════════════════════════════════════════════════════
+services:
+
+  # ────────────────────────────────────────────────────────
+  # EUREKA DISCOVERY SERVER (Khởi động đầu tiên)
+  # ────────────────────────────────────────────────────────
+  discovery-server:
+    build: 
+      context: ./discovery-server/discovery-server
+      dockerfile: Dockerfile
+    container_name: discovery-server
+    hostname: discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ────────────────────────────────────────────────────────
+  # DATABASES (PostgreSQL 16)
+  # ────────────────────────────────────────────────────────
+  postgres-user-db:
+    image: postgres:16-alpine
+    container_name: postgres-user-db
+    hostname: postgres-user-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - smart-schedule-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-auth-db:
+    image: postgres:16-alpine
+    container_name: postgres-auth-db
+    hostname: postgres-auth-db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "5436:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - smart-schedule-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-task-db:
+    image: postgres:16-alpine
+    container_name: postgres-task-db
+    hostname: postgres-task-db
+    environment:
+      POSTGRES_DB: task_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "5435:5432"
+    volumes:
+      - task-db-data:/var/lib/postgresql/data
+    networks:
+      - smart-schedule-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d task_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-ai-db:
+    image: postgres:16-alpine
+    container_name: postgres-ai-db
+    hostname: postgres-ai-db
+    environment:
+      POSTGRES_DB: ai_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "5437:5432"
+    volumes:
+      - ai-db-data:/var/lib/postgresql/data
+    networks:
+      - smart-schedule-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-product-db:
+    image: postgres:16-alpine
+    container_name: postgres-product-db
+    hostname: postgres-product-db
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "5434:5432"
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    networks:
+      - smart-schedule-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d product_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-order-db:
+    image: postgres:16-alpine
+    container_name: postgres-order-db
+    hostname: postgres-order-db
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "5433:5432"
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    networks:
+      - smart-schedule-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d order_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ────────────────────────────────────────────────────────
+  # BUSINESS SERVICES
+  # ────────────────────────────────────────────────────────
+  auth-service:
+    build: 
+      context: ./auth-service/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    hostname: auth-service
+    ports:
+      - "9004:9004"  # Expose để test trực tiếp (có thể bỏ ở production)
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-auth-db:5432/auth_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres-auth-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  user-service:
+    build: 
+      context: ./user-service/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    hostname: user-service
+    ports:
+      - "9001:9001"  # Expose để test trực tiếp
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-user-db:5432/user_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    depends_on:
+      postgres-user-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  task-service:
+    build: 
+      context: ./task-service/task-service
+      dockerfile: Dockerfile
+    container_name: task-service
+    hostname: task-service
+    ports:
+      - "9007:9007"
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-task-db:5432/task_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres-task-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ai-service:
+    build: 
+      context: ./ai-service/ai-service
+      dockerfile: Dockerfile
+    container_name: ai-service
+    hostname: ai-service
+    ports:
+      - "9006:9006"
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-ai-db:5432/ai_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+      - SPRING_AI_OPENAI_API_KEY=${SPRING_AI_OPENAI_API_KEY}
+    depends_on:
+      postgres-ai-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  product-service:
+    build: 
+      context: ./product-service/product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    hostname: product-service
+    ports:
+      - "9003:9003"
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-product-db:5432/product_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres-product-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  order-service:
+    build: 
+      context: ./order-service/order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    hostname: order-service
+    ports:
+      - "9002:9002"
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order-db:5432/order_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres-order-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ────────────────────────────────────────────────────────
+  # API GATEWAY (Khởi động cuối cùng)
+  # ────────────────────────────────────────────────────────
+  api-gateway:
+    build: 
+      context: ./api-gateway/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    hostname: api-gateway
+    ports:
+      - "8080:8080"  # CHỈ CẦN EXPOSE PORT NÀY RA NGOÀI!
+    networks:
+      - smart-schedule-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      task-service:
+        condition: service_started
+      ai-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ════════════════════════════════════════════════════════════
+# VOLUMES: Persistent data storage
+# ════════════════════════════════════════════════════════════
+volumes:
+  user-db-data:
+    driver: local
+  auth-db-data:
+    driver: local
+  task-db-data:
+    driver: local
+  ai-db-data:
+    driver: local
+  product-db-data:
+    driver: local
+  order-db-data:
+    driver: local
+
+
+
+# services:
+#   discovery-server:
+#     build: ./discovery-server/discovery-server
+#     ports:
+#       - "8761:8761"
+#     healthcheck:
+#       test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 5
+#       start_period: 40s
+
+#   postgres-user-db:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_DB: user_db
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: your_postgres_password
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - user-db-data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres -d user_db"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   user-service:
+#     build: ./user-service/user-service
+#     ports:
+#       - "9001:9001"
+#     environment:
+#       - CLOUDINARY_CLOUD_NAME=your_cloud_name
+#       - CLOUDINARY_API_KEY=your_api_key
+#       - CLOUDINARY_API_SECRET=your_api_secret
+#       - JWT_SECRET=your_jwt_secret
+#     depends_on:
+#       postgres-user-db:
+#         condition: service_healthy
+#       discovery-server:
+#         condition: service_healthy
+
+#   postgres-order-db:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_DB: order_db
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: your_postgres_password
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - order-db-data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres -d order_db"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   order-service:
+#     build: ./order-service/order-service
+#     ports:
+#       - "9002:9002"
+#     depends_on:
+#       postgres-order-db:
+#         condition: service_healthy
+#       user-service:
+#         condition: service_started
+#       discovery-server:
+#         condition: service_healthy
+
+#   postgres-product-db:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_DB: product_db
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: your_postgres_password
+#     ports:
+#       - "5434:5432"
+#     volumes:
+#       - product-db-data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres -d product_db"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   product-service:
+#     build: ./product-service/product-service
+#     ports:
+#       - "9003:9003"
+#     depends_on:
+#       postgres-product-db:
+#         condition: service_healthy
+#       discovery-server:
+#         condition: service_healthy
+
+#   postgres-auth-db:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_DB: auth_db
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: your_postgres_password
+#     ports:
+#       - "5436:5432"
+#     volumes:
+#       - auth-db-data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   auth-service:
+#     build: ./auth-service/auth-service
+#     ports:
+#       - "9004:9004"
+#     environment:
+#       JWT_SECRET: your_jwt_secret
+#     depends_on:
+#       postgres-auth-db:
+#         condition: service_healthy
+#       discovery-server:
+#         condition: service_healthy
+#       user-service:
+#         condition: service_started
+
+#   postgres-task-db:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_DB: task_db
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: your_postgres_password
+#     ports:
+#       - "5435:5432"
+#     volumes:
+#       - task-db-data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres -d task_db"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   task-service:
+#     build: ./task-service/task-service
+#     ports:
+#       - "9007:9007"
+#     environment:
+#       JWT_SECRET: your_jwt_secret
+#     depends_on:
+#       postgres-task-db:
+#         condition: service_healthy
+#       discovery-server:
+#         condition: service_healthy
+
+#   # THÊM SERVICE POSTGRES-AI-DB
+#   postgres-ai-db:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_DB: ai_db
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: your_postgres_password
+#     ports:
+#       - "5437:5432"
+#     volumes:
+#       - ai-db-data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres -d ai_db"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   ai-service:
+#     build: ./ai-service/ai-service
+#     ports:
+#       - "9006:9006"
+#     environment:
+#       JWT_SECRET: your_jwt_secret
+#       SPRING_AI_OPENAI_API_KEY: your_openai_api_key
+#     depends_on:
+#       postgres-ai-db:
+#         condition: service_healthy
+#       discovery-server:
+#         condition: service_healthy
+
+#   api-gateway:
+#     build: ./api-gateway/api-gateway
+#     ports:
+#       - "8080:8080"
+#     environment:
+#       JWT_SECRET: your_jwt_secret
+#     depends_on:
+#       order-service:
+#         condition: service_started
+#       user-service:
+#         condition: service_started
+#       product-service:
+#         condition: service_started
+#       auth-service:
+#         condition: service_started
+#       task-service:
+#         condition: service_started
+#       ai-service:
+#         condition: service_started
+#       discovery-server:
+#         condition: service_healthy
+
+# volumes:
+#   user-db-data:
+#   order-db-data:
+#   product-db-data:
+#   task-db-data:
+#   auth-db-data:
+#   ai-db-data:
