@@ -25,4 +25,10 @@ public class UserInternalController {
         UserAuthResponse userResponse = userService.getUserByEmail(email);
         return ResponseEntity.ok(userResponse);
     }
+    
+    @GetMapping("/{id}/email")
+    public ResponseEntity<String> getUserEmail(@PathVariable("id") Long userId) {
+        String email = userService.getUserEmailById(userId);
+        return ResponseEntity.ok(email);
+    }
 }

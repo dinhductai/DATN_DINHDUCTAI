@@ -198,6 +198,28 @@ services:
         max-file: "3"
 
   # ────────────────────────────────────────────────────────
+  # MESSAGE BROKER (RabbitMQ)
+  # ────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - smart-schedule-network
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ────────────────────────────────────────────────────────
   # BUSINESS SERVICES
   # ────────────────────────────────────────────────────────
   auth-service:
@@ -278,6 +300,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
     depends_on:
       postgres-task-db:
         condition: service_healthy
@@ -370,6 +396,10 @@ services:
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
     depends_on:
       postgres-email-db:
         condition: service_healthy
@@ -402,6 +432,8 @@ services:
     depends_on:
       discovery-server:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
       auth-service:
         condition: service_started
       user-service:

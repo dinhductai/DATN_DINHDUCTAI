@@ -152,6 +152,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public String getUserEmailById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+        return user.getEmail();
+    }
+
+    @Override
     public long countUser() {
         return userRepository.count();
     }
