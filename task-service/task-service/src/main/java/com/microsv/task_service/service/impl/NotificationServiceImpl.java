@@ -10,89 +10,102 @@ import com.microsv.task_service.mapper.NotificationMapper;
 import com.microsv.task_service.repository.PushSubscriptionRepository;
 import com.microsv.task_service.repository.TaskRepository;
 import com.microsv.task_service.service.NotificationService;
-import jakarta.annotation.PostConstruct;
-import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
-
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.jose4j.json.internal.json_simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.security.GeneralSecurityException;
-import java.security.Security;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class NotificationServiceImpl implements NotificationService {
 
-    TaskRepository taskRepository;
-    PushSubscriptionRepository subscriptionRepository;
-    NotificationMapper notificationMapper;
-    //pushservice không final vì khởi tạo sau trong @PostConstruct
-    PushService pushService;
+    // constructor-injected: final required
+    private final TaskRepository taskRepository;
+    private final PushSubscriptionRepository subscriptionRepository;
+    private final NotificationMapper notificationMapper;
 
-    @Value("${vapid.public.key}")
-    String publicKey;
+    // field-injected by @Value — NOT final, reassigned in @PostConstruct
+    @Value("${vapid.public.key:#{null}}")
+    private String publicKey;
 
-    @Value("${vapid.private.key}")
-    String privateKey;
+    @Value("${vapid.private.key:#{null}}")
+    private String privateKey;
 
+    // lazy-initialized in @PostConstruct — NOT final
+    private PushService pushService;
+    private boolean pushServiceInitialized = false;
 
-    //khởi tạo pushservice với cặp khóa
-    @PostConstruct
-    private void init() throws GeneralSecurityException {
-        //đảm bảo BouncyCastle được đăng ký
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
-
-        this.pushService = new PushService(publicKey, privateKey, "mailto:dinhductai2501@gmail.com"); //URI scheme
-    }
-
-
-    //quét deadline và gửi tb
-    @Override
-    @Scheduled(fixedRate = 30000) //set thời gian quét deadline , đang là 30s
-    public void checkDeadlinesAndSendNotifications() {
-        OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime inOneHour = now.plusHours(1);
-
-        List<Task> upcomingTasks = taskRepository.findAllByDeadlineBetweenAndStatus(now, inOneHour, TaskStatus.TODO);
-
-        for (Task task : upcomingTasks) {
-            List<PushSubscription> subscriptions = subscriptionRepository.findAllByUserId(task.getUserId());
-
-            for (PushSubscription sub : subscriptions) {
-                String payload = String.format("task '%s' is due soon " , task.getTitle());
-                sendNotification(sub, payload);
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        try {
+            if (publicKey == null || publicKey.isBlank()
+                    || privateKey == null || privateKey.isBlank()) {
+                log.warn("VAPID keys not configured — push notifications are DISABLED. " +
+                        "Set vapid.public.key and vapid.private.key to enable.");
+                return;
             }
+
+            pushService = new PushService(publicKey, privateKey, "mailto:dinhductai2501@gmail.com");
+            pushServiceInitialized = true;
+            log.info("PushService initialized successfully");
+        } catch (Exception e) {
+            log.error("Failed to initialize PushService — push notifications DISABLED. " +
+                    "Check VAPID keys: {}", e.getMessage());
+            // DON'T rethrow — allow app to start
         }
     }
 
+    @Override
+    @Scheduled(fixedRate = 30000)
+    public void checkDeadlinesAndSendNotifications() {
+        if (!pushServiceInitialized) {
+            log.debug("PushService not initialized — skipping deadline check");
+            return;
+        }
 
-    //lưu đăng ký nhận tb
+        try {
+            OffsetDateTime now = OffsetDateTime.now();
+            OffsetDateTime inOneHour = now.plusHours(1);
+
+            List<Task> upcomingTasks = taskRepository
+                    .findAllByDeadlineBetweenAndStatus(now, inOneHour, TaskStatus.TODO);
+
+            for (Task task : upcomingTasks) {
+                List<PushSubscription> subscriptions = subscriptionRepository
+                        .findAllByUserId(task.getUserId());
+
+                for (PushSubscription sub : subscriptions) {
+                    String payload = String.format("Task '%s' is due soon!", task.getTitle());
+                    sendNotification(sub, payload);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error during deadline check: {}", e.getMessage());
+        }
+    }
+
     @Override
     public void subscribe(SubscriptionRequest request, Long userId) {
         try {
             subscriptionRepository.save(notificationMapper.toPushSubscription(request, userId));
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
         }
     }
 
-    //gửi thông báo trình duyệt
     public void sendNotification(PushSubscription subscription, String payload) {
+        if (!pushServiceInitialized) {
+            log.debug("PushService not initialized — skipping notification");
+            return;
+        }
+
         try {
             Notification notification = new Notification(
                     subscription.getEndpoint(),
@@ -102,10 +115,9 @@ public class NotificationServiceImpl implements NotificationService {
             );
 
             pushService.send(notification);
-
         } catch (Exception e) {
-            throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
+            log.warn("Failed to send push notification to endpoint {}: {}",
+                    subscription.getEndpoint(), e.getMessage());
         }
     }
-
 }

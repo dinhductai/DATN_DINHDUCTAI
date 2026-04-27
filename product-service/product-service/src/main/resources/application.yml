@@ -1,4 +1,3 @@
-# application.yml của product-service
 spring:
   application:
     name: product-service
@@ -14,11 +13,14 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 server:
-  port: 9003 # Chọn một cổng mới chưa được sử dụng
+  port: 9003
 
 eureka:
+  instance:
+    hostname: product-service
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
-  instance:
-    prefer-ip-address: true
+    register-with-eureka: true
+    fetch-registry: true

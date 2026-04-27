@@ -14,7 +14,7 @@ spring:
     show-sql: true
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY}
+      api-key: ${OPENAI_API_KEY:}
       chat:
         options:
           model: gpt-3.5-turbo
@@ -23,12 +23,14 @@ server:
   port: 9006
 
 eureka:
+  instance:
+    hostname: ai-service
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
-  instance:
-    prefer-ip-address: true
+    register-with-eureka: true
+    fetch-registry: true
 
 jwt:
   secret: ${JWT_SECRET}
-

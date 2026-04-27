@@ -15,19 +15,30 @@ spring:
 server:
   port: 9007
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
 eureka:
+  instance:
+    hostname: task-service
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
-  instance:
-    prefer-ip-address: true
+    register-with-eureka: true
+    fetch-registry: true
 
-# THÊM DÒNG NÀY
 jwt:
   secret: ${JWT_SECRET}
 
 vapid:
   public:
-    key: ${VAPID_PUBLIC_KEY}
+    key: ${VAPID_PUBLIC_KEY:}
   private:
-    key: ${VAPID_PRIVATE_KEY}
+    key: ${VAPID_PRIVATE_KEY:}

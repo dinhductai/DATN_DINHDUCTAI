@@ -215,7 +215,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-auth-db:5432/auth_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres-auth-db:
@@ -244,7 +244,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-user-db:5432/user_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
@@ -276,7 +276,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-task-db:5432/task_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres-task-db:
@@ -305,7 +305,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-ai-db:5432/ai_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_AI_OPENAI_API_KEY=${SPRING_AI_OPENAI_API_KEY}
     depends_on:
@@ -335,7 +335,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-product-db:5432/product_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres-product-db:
@@ -364,7 +364,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order-db:5432/order_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres-order-db:
@@ -395,7 +395,7 @@ services:
       - smart-schedule-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       discovery-server:

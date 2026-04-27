@@ -1,5 +1,5 @@
 server:
-  port: 9004 # Chọn một cổng chưa được sử dụng
+  port: 9004
 
 spring:
   application:
@@ -8,7 +8,7 @@ spring:
     url: jdbc:postgresql://postgres-auth-db:5432/auth_db
     username: postgres
     password: ${POSTGRES_PASSWORD}
-  jpa: # <-- Thụt ra một cấp
+  jpa:
     hibernate:
       ddl-auto: update
     properties:
@@ -16,12 +16,14 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 eureka:
+  instance:
+    hostname: auth-service
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
-  instance:
-    prefer-ip-address: true
+    register-with-eureka: true
+    fetch-registry: true
 
-# Khóa bí mật để ký JWT token, bạn có thể thay đổi thành một chuỗi phức tạp hơn
 jwt:
   secret: ${JWT_SECRET}

@@ -14,11 +14,14 @@ spring:
 server:
   port: 9001
 eureka:
+  instance:
+    hostname: user-service
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
-  instance:
-    prefer-ip-address: true
+    register-with-eureka: true
+    fetch-registry: true
 
 jwt:
   secret: ${JWT_SECRET}

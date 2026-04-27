@@ -23,25 +23,24 @@ spring:
           uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
-
-        # --- PHẦN CẬP NHẬT CHO SERVICE MỚI ---
         - id: task-service-route
           uri: lb://task-service
           predicates:
             - Path=/api/tasks/**
-
         - id: ai-service-route
           uri: lb://ai-service
           predicates:
             - Path=/api/ai/**
-        # ------------------------------------
 
 eureka:
+  instance:
+    hostname: api-gateway
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
-  instance:
-    prefer-ip-address: true
+    register-with-eureka: true
+    fetch-registry: true
 
 jwt:
   secret: ${JWT_SECRET}
