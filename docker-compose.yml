@@ -145,31 +145,31 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  postgres-product-db:
-    image: postgres:16-alpine
-    container_name: postgres-product-db
-    hostname: postgres-product-db
-    environment:
-      POSTGRES_DB: product_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
-    ports:
-      - "5434:5432"
-    volumes:
-      - product-db-data:/var/lib/postgresql/data
-    networks:
-      - smart-schedule-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d product_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+  # postgres-product-db:
+  #   image: postgres:16-alpine
+  #   container_name: postgres-product-db
+  #   hostname: postgres-product-db
+  #   environment:
+  #     POSTGRES_DB: product_db
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+  #   ports:
+  #     - "5434:5432"
+  #   volumes:
+  #     - product-db-data:/var/lib/postgresql/data
+  #   networks:
+  #     - smart-schedule-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres -d product_db"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
 
   postgres-email-db:
     image: postgres:16-alpine
@@ -346,34 +346,34 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  product-service:
-    build:
-      context: .
-      dockerfile: product-service/product-service/Dockerfile
-    container_name: product-service
-    hostname: product-service
-    ports:
-      - "9003:9003"
-    networks:
-      - smart-schedule-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-product-db:5432/product_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
-      - JWT_SECRET=${JWT_SECRET}
-    depends_on:
-      postgres-product-db:
-        condition: service_healthy
-      discovery-server:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+  # product-service:
+  #   build:
+  #     context: .
+  #     dockerfile: product-service/product-service/Dockerfile
+  #   container_name: product-service
+  #   hostname: product-service
+  #   ports:
+  #     - "9003:9003"
+  #   networks:
+  #     - smart-schedule-network
+  #   environment:
+  #     - SPRING_PROFILES_ACTIVE=docker
+  #     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-product-db:5432/product_db
+  #     - SPRING_DATASOURCE_USERNAME=postgres
+  #     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password123}
+  #     - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
+  #     - JWT_SECRET=${JWT_SECRET}
+  #   depends_on:
+  #     postgres-product-db:
+  #       condition: service_healthy
+  #     discovery-server:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
 
   email-service:
     build:
@@ -442,8 +442,8 @@ services:
         condition: service_started
       ai-service:
         condition: service_started
-      product-service:
-        condition: service_started
+      # product-service:
+      #   condition: service_started
       email-service:
         condition: service_started
     restart: unless-stopped
@@ -465,8 +465,8 @@ volumes:
     driver: local
   ai-db-data:
     driver: local
-  product-db-data:
-    driver: local
+  # product-db-data:
+  #   driver: local
   email-db-data:
     driver: local
 
