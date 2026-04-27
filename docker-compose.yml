@@ -1,8 +1,3 @@
-version: '3.8'
-
-# ════════════════════════════════════════════════════════════
-# NETWORKS: Tạo isolated network cho microservices
-# ════════════════════════════════════════════════════════════
 networks:
   smart-schedule-network:
     driver: bridge
@@ -19,9 +14,9 @@ services:
   # EUREKA DISCOVERY SERVER (Khởi động đầu tiên)
   # ────────────────────────────────────────────────────────
   discovery-server:
-    build: 
-      context: ./discovery-server/discovery-server
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: discovery-server/discovery-server/Dockerfile
     container_name: discovery-server
     hostname: discovery-server
     ports:
@@ -206,9 +201,9 @@ services:
   # BUSINESS SERVICES
   # ────────────────────────────────────────────────────────
   auth-service:
-    build: 
-      context: ./auth-service/auth-service
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: auth-service/auth-service/Dockerfile
     container_name: auth-service
     hostname: auth-service
     ports:
@@ -235,9 +230,9 @@ services:
         max-file: "3"
 
   user-service:
-    build: 
-      context: ./user-service/user-service
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: user-service/user-service/Dockerfile
     container_name: user-service
     hostname: user-service
     ports:
@@ -267,9 +262,9 @@ services:
         max-file: "3"
 
   task-service:
-    build: 
-      context: ./task-service/task-service
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: task-service/task-service/Dockerfile
     container_name: task-service
     hostname: task-service
     ports:
@@ -296,9 +291,9 @@ services:
         max-file: "3"
 
   ai-service:
-    build: 
-      context: ./ai-service/ai-service
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: ai-service/ai-service/Dockerfile
     container_name: ai-service
     hostname: ai-service
     ports:
@@ -326,9 +321,9 @@ services:
         max-file: "3"
 
   product-service:
-    build: 
-      context: ./product-service/product-service
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: product-service/product-service/Dockerfile
     container_name: product-service
     hostname: product-service
     ports:
@@ -355,9 +350,9 @@ services:
         max-file: "3"
 
   order-service:
-    build: 
-      context: ./order-service/order-service
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: order-service/order-service/Dockerfile
     container_name: order-service
     hostname: order-service
     ports:
@@ -389,9 +384,9 @@ services:
   # API GATEWAY (Khởi động cuối cùng)
   # ────────────────────────────────────────────────────────
   api-gateway:
-    build: 
-      context: ./api-gateway/api-gateway
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: api-gateway/api-gateway/Dockerfile
     container_name: api-gateway
     hostname: api-gateway
     ports:
