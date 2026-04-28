@@ -2,6 +2,7 @@ package com.microsv.task_service.repository;
 
 import com.microsv.task_service.dto.response.DailyCompletedTasksResponse;
 import com.microsv.task_service.entity.Task;
+import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
 import com.microsv.task_service.repository.query.TaskQuery;
 import jakarta.persistence.Tuple;
@@ -68,4 +69,26 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Tuple> countTasksByPriority();
 
     List<Task> findByTitle(String title);
+
+    @Query("""
+        SELECT t FROM Task t
+        WHERE t.userId = :userId
+        AND (:status IS NULL OR t.status = :status)
+        AND (:priority IS NULL OR t.priority = :priority)
+        AND (:fromDate IS NULL OR t.deadline >= :fromDate)
+        AND (:toDate IS NULL OR t.deadline <= :toDate)
+        ORDER BY
+            CASE WHEN t.status = 'TODO' THEN 0 ELSE 1 END,
+            CASE t.priority WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
+            t.deadline ASC
+        LIMIT :limit
+        """)
+    List<Task> findFilteredTasks(
+            @Param("userId") Long userId,
+            @Param("status") TaskStatus status,
+            @Param("priority") com.microsv.task_service.enumeration.PriorityLevel priority,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            @Param("limit") int limit
+    );
 }

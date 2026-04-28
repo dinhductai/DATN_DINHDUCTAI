@@ -6,8 +6,6 @@ import com.microsv.ai_service.entity.ConversationMemory;
 import com.microsv.ai_service.repository.ConversationMemoryRepository;
 import com.microsv.ai_service.service.ConversationMemoryService;
 import com.microsv.ai_service.util.NullUtil;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -22,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +52,10 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
     public List<Message> get(String conversationId) {
         NullUtil.checkUserNullByUserId(getCurrentUserId());
         List<ConversationMemory> cvMemory = conversationMemoryRepository.findByConversationId(conversationId);
-        List<TaskResponse> tasks = taskClient.getUserTasks(getCurrentUserId());
+
+        // Lấy tasks đã lọc - chỉ TODO/IN_PROGRESS, trong 7 ngày tới, limit 20
+        List<TaskResponse> tasks = getSmartFilteredTasks(getCurrentUserId());
+
         Message taskContext = createTaskContext(tasks);
         List<Message> messages = new ArrayList<>();
         if(!tasks.isEmpty()){
@@ -61,6 +63,35 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
         }
         messages.addAll(cvMemory.stream().map(this::convertToMessage).collect(Collectors.toList()));
         return messages;
+    }
+
+    /**
+     * Lấy tasks thông minh cho AI context
+     * - Chỉ lấy TODO và IN_PROGRESS (không lấy DONE)
+     * - Chỉ lấy trong 7 ngày tới
+     * - Limit 20 tasks để tránh context quá dài
+     */
+    private List<TaskResponse> getSmartFilteredTasks(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDate nextWeek = today.plusDays(7);
+
+        try {
+            return taskClient.getFilteredTasks(
+                    userId,
+                    null, // không lọc theo status - lấy cả TODO và IN_PROGRESS
+                    null, // không lọc theo priority
+                    today,
+                    nextWeek,
+                    20   // limit 20 tasks
+            );
+        } catch (Exception e) {
+            // Fallback: thử lấy tất cả nếu filter fails
+            try {
+                return taskClient.getUserTasks(userId);
+            } catch (Exception ex) {
+                return List.of();
+            }
+        }
     }
 
     @Override
@@ -72,29 +103,72 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
 
     private Message createTaskContext(List<TaskResponse> taskResponses) {
         StringBuilder context = new StringBuilder();
-        context.append("USER'S CURRENT TASKS , DEADLINE AND SCHEDULE: \n");
+        context.append("═══════════════════════════════════════════════════\n");
+        context.append("📋 DỮ LIỆU TASK CỦA USER (7 NGÀY TỚI)\n");
+        context.append("═══════════════════════════════════════════════════\n\n");
+
         if (taskResponses.isEmpty()) {
-            context.append(" NO TASKS FOUND\n");
+            context.append("⚠️ KHÔNG CÓ TASK NÀO TRONG 7 NGÀY TỚI\n");
         }
         else{
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            // Đếm stats
+            long todoCount = taskResponses.stream().filter(t -> "TODO".equals(t.getStatus().name())).count();
+            long inProgressCount = taskResponses.stream().filter(t -> "IN_PROGRESS".equals(t.getStatus().name())).count();
+            long highPriority = taskResponses.stream().filter(t -> "HIGH".equals(t.getPriority().name())).count();
+
+            context.append(String.format("📊 Tổng quan: %d tasks | TODO: %d | Đang làm: %d | HIGH priority: %d\n\n",
+                    taskResponses.size(), todoCount, inProgressCount, highPriority));
 
             for(TaskResponse taskResponse : taskResponses){
-                context.append(String.format(
-                        "- title: %s | description: %s | deadline: %s | status: %s | priority: %s | createdAt: %s | completedAt: %s \n",
-                        taskResponse.getTitle(),
-                        taskResponse.getDescription(),
-                        taskResponse.getDeadline() != null ? taskResponse.getDeadline().format(formatter) : "No deadline",
-                        taskResponse.getStatus(),
-                        taskResponse.getPriority(),
-                        taskResponse.getCreatedAt().format(formatter),
-                        taskResponse.getCompletedAt() != null ? taskResponse.getCompletedAt().format(formatter) : "Still working"
-                ));
+                String emoji = getPriorityEmoji(taskResponse.getPriority().name());
+                String statusIcon = getStatusIcon(taskResponse.getStatus().name());
+
+                context.append(String.format("%s %s %s\n", emoji, statusIcon, taskResponse.getTitle()));
+                context.append(String.format("   📅 Deadline: %s | ⭐ Priority: %s | 📌 Status: %s\n",
+                        taskResponse.getDeadline() != null ? taskResponse.getDeadline().format(formatter) : "Không có",
+                        taskResponse.getPriority().name(),
+                        taskResponse.getStatus().name()));
+                if (taskResponse.getDescription() != null && !taskResponse.getDescription().isBlank()) {
+                    context.append(String.format("   📝 Mô tả: %s\n", truncate(taskResponse.getDescription(), 100)));
+                }
+                context.append("\n");
             }
         }
-        context.append("\nUse this task information to provide relevant responses about scheduling, " +
-                "task management, and deadlines while maintaining conversation context.");
+
+        context.append("═══════════════════════════════════════════════════\n");
+        context.append("Dựa vào dữ liệu TRÊN để trả lời câu hỏi của user.\n");
+        context.append("Nếu user hỏi về task cụ thể - tra cứu trong danh sách trên.\n");
+        context.append("Nếu user hỏi sắp xếp - xếp theo deadline và priority.\n");
+        context.append("═══════════════════════════════════════════════════\n");
+
         return new SystemMessage(context.toString());
+    }
+
+    private String getPriorityEmoji(String priority) {
+        if (priority == null) return "⚪";
+        return switch (priority.toUpperCase()) {
+            case "HIGH" -> "🔴";
+            case "MEDIUM" -> "🟡";
+            case "LOW" -> "🟢";
+            default -> "⚪";
+        };
+    }
+
+    private String getStatusIcon(String status) {
+        if (status == null) return "❓";
+        return switch (status.toUpperCase()) {
+            case "TODO" -> "📝";
+            case "IN_PROGRESS" -> "🔄";
+            case "DONE" -> "✅";
+            default -> "❓";
+        };
+    }
+
+    private String truncate(String text, int maxLength) {
+        if (text == null || text.length() <= maxLength) return text;
+        return text.substring(0, maxLength) + "...";
     }
 
     private Long getCurrentUserId() {

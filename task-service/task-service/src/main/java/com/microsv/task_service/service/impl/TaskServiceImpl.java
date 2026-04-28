@@ -229,6 +229,16 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public List<TaskResponse> getFilteredTasks(Long userId, TaskStatus status, PriorityLevel priority,
+                                              LocalDate fromDate, LocalDate toDate, Integer limit) {
+        LocalDateTime fromDateTime = fromDate != null ? fromDate.atStartOfDay() : null;
+        LocalDateTime toDateTime = toDate != null ? toDate.atTime(23, 59, 59) : null;
+
+        List<Task> tasks = taskRepository.findFilteredTasks(userId, status, priority, fromDateTime, toDateTime, limit);
+        return tasks.stream().map(taskMapper::toTaskResponse).collect(Collectors.toList());
+    }
+
+    @Override
     public TaskStatisticResponse getTaskStatistics(Long userId) {
         Long totalTasks = taskRepository.countByUserIdAndStatus(userId, null);
         Long todoCount = taskRepository.countByUserIdAndStatus(userId, TaskStatus.TODO);

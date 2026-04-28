@@ -4,8 +4,10 @@ import com.microsv.task_service.dto.request.TaskCreationRequest;
 import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.*;
 import com.microsv.task_service.entity.Task;
+import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface TaskService {
@@ -30,5 +32,7 @@ public interface TaskService {
     Long countTasksCreatedThisWeek();
     List<DailyCompletedTasksResponse> getCompletedTasksByDayThisWeek();
     List<TaskPriorityCountResponse> countTasksByPriority();
+    List<TaskResponse> getFilteredTasks(Long userId, TaskStatus status, PriorityLevel priority,
+                                       LocalDate fromDate, LocalDate toDate, Integer limit);
     List<Task> findTaskByTitle(String title);
 }
