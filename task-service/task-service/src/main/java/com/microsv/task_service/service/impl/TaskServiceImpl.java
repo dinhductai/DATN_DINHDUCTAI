@@ -11,6 +11,8 @@ import com.microsv.task_service.enumeration.TaskStatus;
 import com.microsv.task_service.mapper.TaskMapper;
 import com.microsv.task_service.repository.TaskRepository;
 import com.microsv.task_service.service.TaskService;
+import com.microsv.task_service.service.ClaudeTaskConvertService;
+import com.microsv.task_service.service.TaskCacheService;
 import com.microsv.task_service.util.DateUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,13 +35,17 @@ import java.util.stream.Collectors;
 public class TaskServiceImpl implements TaskService {
     TaskMapper taskMapper;
     TaskRepository taskRepository;
+    TaskCacheService taskCacheService;
+    ClaudeTaskConvertService claudeTaskConvertService;
 
     @Override
     public TaskResponse createTask(TaskCreationRequest request, Long userId) {
         try {
 //            DateUtil.ValidateDeadline(request.getDeadline());
             Task savedTask = taskRepository.save(taskMapper.taskCreationRequestToTask(request, userId));
-            return taskMapper.toTaskResponse(savedTask);
+            TaskResponse response = taskMapper.toTaskResponse(savedTask);
+            syncTasksToRedis(userId);
+            return response;
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
         }
@@ -101,7 +107,9 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         Task updatedTask = taskRepository.save(task);
-        return taskMapper.toTaskResponse(updatedTask);
+        TaskResponse response = taskMapper.toTaskResponse(updatedTask);
+        syncTasksToRedis(userId);
+        return response;
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
         }
@@ -119,8 +127,9 @@ public class TaskServiceImpl implements TaskService {
         }
 
         Task updatedTask = taskRepository.save(task);
-
-        return taskMapper.toTaskResponse(updatedTask);
+        TaskResponse response = taskMapper.toTaskResponse(updatedTask);
+        syncTasksToRedis(userId);
+        return response;
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
         }
@@ -133,8 +142,18 @@ public class TaskServiceImpl implements TaskService {
                     .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
 
             taskRepository.delete(task);
+            syncTasksToRedis(userId);
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
+        }
+    }
+
+    private void syncTasksToRedis(Long userId) {
+        try {
+            List<Task> tasks = taskRepository.findAllByUserId(userId);
+            claudeTaskConvertService.syncUserTasks(userId, tasks);
+        } catch (Exception e) {
+            log.error("Failed to sync tasks to Redis for user {}: {}", userId, e.getMessage());
         }
     }
 
@@ -231,10 +250,14 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<TaskResponse> getFilteredTasks(Long userId, TaskStatus status, PriorityLevel priority,
                                               LocalDate fromDate, LocalDate toDate, Integer limit) {
-        LocalDateTime fromDateTime = fromDate != null ? fromDate.atStartOfDay() : null;
-        LocalDateTime toDateTime = toDate != null ? toDate.atTime(23, 59, 59) : null;
+        OffsetDateTime fromDateTime = fromDate != null ? fromDate.atStartOfDay().atZone(ZoneId.systemDefault()).toOffsetDateTime() : null;
+        OffsetDateTime toDateTime = toDate != null ? toDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toOffsetDateTime() : null;
 
-        List<Task> tasks = taskRepository.findFilteredTasks(userId, status, priority, fromDateTime, toDateTime, limit);
+        // Convert enums to String for native query
+        String statusStr = status != null ? status.name() : null;
+        String priorityStr = priority != null ? priority.name() : null;
+
+        List<Task> tasks = taskRepository.findFilteredTasks(userId, statusStr, priorityStr, fromDateTime, toDateTime, limit);
         return tasks.stream().map(taskMapper::toTaskResponse).collect(Collectors.toList());
     }
 
@@ -254,7 +277,14 @@ public class TaskServiceImpl implements TaskService {
                 .build();
     }
 
-
-
+    @Override
+    public void syncTasksToCache(Long userId) {
+        try {
+            List<Task> tasks = taskRepository.findAllByUserId(userId);
+            claudeTaskConvertService.syncUserTasks(userId, tasks);
+        } catch (Exception e) {
+            log.error("Failed to sync tasks to cache for user {}: {}", userId, e.getMessage());
+        }
+    }
 
 }

@@ -198,6 +198,24 @@ services:
         max-file: "3"
 
   # ────────────────────────────────────────────────────────
+  # REDIS CACHE
+  # ────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - smart-schedule-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ────────────────────────────────────────────────────────
   # MESSAGE BROKER (RabbitMQ)
   # ────────────────────────────────────────────────────────
   rabbitmq:
@@ -304,11 +322,16 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=${RABBITMQ_USER:-guest}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
     depends_on:
       postgres-task-db:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
     logging:
       driver: "json-file"

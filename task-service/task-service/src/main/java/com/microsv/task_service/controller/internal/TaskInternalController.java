@@ -4,6 +4,7 @@ import com.microsv.task_service.dto.response.TaskResponse;
 import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
 import com.microsv.task_service.service.TaskService;
+import com.microsv.task_service.service.TaskCacheService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -22,11 +23,27 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TaskInternalController {
     TaskService taskService;
+    TaskCacheService taskCacheService;
 
     @GetMapping
     public ResponseEntity<List<TaskResponse>> getTasks(@RequestHeader("userId") Long userId) {
         List<TaskResponse> responses = taskService.getAllTasksByUser(userId);
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/ai/json")
+    public ResponseEntity<String> getTasksJsonForAI(@RequestHeader("userId") Long userId) {
+        String cachedJson = taskCacheService.getCachedTaskJson(userId);
+        if (cachedJson != null) {
+            return ResponseEntity.ok(cachedJson);
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/ai/refresh")
+    public ResponseEntity<Void> refreshTaskCache(@RequestHeader("userId") Long userId) {
+        taskService.syncTasksToCache(userId);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/filter")

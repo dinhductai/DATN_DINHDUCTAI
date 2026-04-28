@@ -70,11 +70,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByTitle(String title);
 
-    @Query("""
-        SELECT t FROM Task t
-        WHERE t.userId = :userId
-        AND (:status IS NULL OR t.status = :status)
-        AND (:priority IS NULL OR t.priority = :priority)
+    @Query(value = """
+        SELECT * FROM tasks t
+        WHERE t.user_id = :userId
+        AND (CAST(:status AS VARCHAR) IS NULL OR t.status = CAST(:status AS VARCHAR))
+        AND (CAST(:priority AS VARCHAR) IS NULL OR t.priority = CAST(:priority AS VARCHAR))
         AND (:fromDate IS NULL OR t.deadline >= :fromDate)
         AND (:toDate IS NULL OR t.deadline <= :toDate)
         ORDER BY
@@ -82,13 +82,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             CASE t.priority WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
             t.deadline ASC
         LIMIT :limit
-        """)
+        """, nativeQuery = true)
     List<Task> findFilteredTasks(
             @Param("userId") Long userId,
-            @Param("status") TaskStatus status,
-            @Param("priority") com.microsv.task_service.enumeration.PriorityLevel priority,
-            @Param("fromDate") LocalDateTime fromDate,
-            @Param("toDate") LocalDateTime toDate,
+            @Param("status") String status,
+            @Param("priority") String priority,
+            @Param("fromDate") OffsetDateTime fromDate,
+            @Param("toDate") OffsetDateTime toDate,
             @Param("limit") int limit
     );
 }

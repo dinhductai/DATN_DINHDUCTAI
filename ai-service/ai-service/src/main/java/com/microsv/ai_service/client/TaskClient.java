@@ -27,4 +27,8 @@ public interface TaskClient {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(required = false, defaultValue = "20") Integer limit
     );
+
+    //lấy task JSON đã được Claude convert từ Redis
+    @GetMapping(value = "/internal/tasks/ai/json")
+    String getTasksJsonForAI(@RequestHeader("userId") Long userId);
 }

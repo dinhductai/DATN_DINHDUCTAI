@@ -35,4 +35,5 @@ public interface TaskService {
     List<TaskResponse> getFilteredTasks(Long userId, TaskStatus status, PriorityLevel priority,
                                        LocalDate fromDate, LocalDate toDate, Integer limit);
     List<Task> findTaskByTitle(String title);
+    void syncTasksToCache(Long userId);
 }
