@@ -30,9 +30,9 @@ public class DailyTaskNotificationService {
     private final UserClient userClient;
     private final TaskNotificationProducer taskNotificationProducer;
     
-    @Scheduled(cron = "0 0 6 * * *")
+    @Scheduled(cron = "0 55 4 * * *", zone = "Asia/Ho_Chi_Minh")
     public void sendDailyTaskNotifications() {
-        log.info("Starting daily task notification job at 6 AM");
+        log.info("Starting daily task notification job - Testing at 11:30 AM Vietnam time");
         
         try {
             OffsetDateTime startOfDay = OffsetDateTime.of(LocalDateTime.of(LocalDate.now(), LocalTime.MIN), ZoneOffset.UTC);

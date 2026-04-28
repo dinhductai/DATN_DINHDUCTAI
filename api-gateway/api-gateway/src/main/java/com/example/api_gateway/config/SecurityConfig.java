@@ -39,7 +39,12 @@ public class SecurityConfig {
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/users/register").permitAll()
+                        .pathMatchers("/api/notifications/trigger-daily").permitAll()
                         .pathMatchers("/eureka/**").permitAll()
+                        .pathMatchers("/internal/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                        .pathMatchers(HttpMethod.POST, "/api/users/create").hasRole("ADMIN")
+                        .pathMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
                         .pathMatchers("/api/users/**").authenticated()    // User operations
                         .pathMatchers("/api/orders/**").authenticated()   // Order operations
                         .pathMatchers("/api/products/**").authenticated() // Product operations

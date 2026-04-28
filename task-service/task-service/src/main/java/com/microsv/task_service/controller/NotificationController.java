@@ -3,6 +3,7 @@ package com.microsv.task_service.controller;
 import com.microsv.task_service.dto.request.SubscriptionRequest;
 import com.microsv.task_service.entity.PushSubscription;
 import com.microsv.task_service.service.NotificationService;
+import com.microsv.task_service.service.DailyTaskNotificationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,6 +24,7 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final DailyTaskNotificationService dailyTaskNotificationService;
 
 
     @PostMapping("/subscribe")
@@ -30,6 +32,13 @@ public class NotificationController {
         Long userId = Long.parseLong(jwt.getSubject());
         notificationService.subscribe(request, userId);
         return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    @PostMapping("/trigger-daily")
+    public ResponseEntity<String> triggerDailyNotification() {
+        log.info("Manually triggering daily task notification");
+        dailyTaskNotificationService.sendDailyTaskNotifications();
+        return ResponseEntity.ok("Daily task notification triggered successfully");
     }
 
 //    @DeleteMapping("/unsubscribe")

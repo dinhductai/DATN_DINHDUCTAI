@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/tasks/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").authenticated()
                         // Notification endpoints
+                        .requestMatchers("/api/notifications/trigger-daily").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
                         // Admin endpoints
                         .requestMatchers(HttpMethod.GET, "/api/tasks/admin").hasRole("ADMIN")

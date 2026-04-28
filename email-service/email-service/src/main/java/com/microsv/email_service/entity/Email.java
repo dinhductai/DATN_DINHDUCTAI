@@ -20,10 +20,12 @@ public class Email {
 
     private String subject;
 
+    @Column(columnDefinition = "TEXT")
     private String body;
 
     private String status;
 
+    @Column(columnDefinition = "TEXT")
     private String errorMessage;
 
     @CreationTimestamp
