@@ -19,6 +19,9 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +50,9 @@ public class ChatAIServiceImpl implements ChatAIService {
 
         try {
             String taskJson = getTaskJsonFromRedis(userId);
+            String currentDateInfo = getCurrentDateInfo();
             String enhancedPrompt = PromptUtil.SYSTEM_PROMPT +
+                "\n\n" + currentDateInfo +
                 "\n\n" + "DỮ LIỆU TASK HIỆN TẠI (JSON):\n" + taskJson;
 
             return chatClient.prompt()
@@ -75,7 +80,9 @@ public class ChatAIServiceImpl implements ChatAIService {
 
         try {
             String taskJson = getTaskJsonFromRedis(userId);
+            String currentDateInfo = getCurrentDateInfo();
             String enhancedPrompt = PromptUtil.SYSTEM_PROMPT +
+                "\n\n" + currentDateInfo +
                 "\n\n" + "DỮ LIỆU TASK HIỆN TẠI (JSON):\n" + taskJson;
 
             String rawResponse = chatClient.prompt()
@@ -176,5 +183,92 @@ public class ChatAIServiceImpl implements ChatAIService {
             log.warn("Failed to get task JSON from Redis for user {}: {}", userId, e.getMessage());
             return "{\"tasks\": []}";
         }
+    }
+
+    /**
+     * Trả về thông tin ngày hiện tại theo múi giờ Việt Nam (Asia/Ho_Chi_Minh).
+     * Rất quan trọng: AI phải biết HÔM NAY là ngày nào để so sánh deadline chính xác.
+     */
+    private String getCurrentDateInfo() {
+        ZonedDateTime nowVietnam = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+
+        // Thông tin cơ bản
+        String formatted = nowVietnam.format(
+            DateTimeFormatter.ofPattern("EEEE', ngày' dd' tháng' MM' năm' yyyy", new java.util.Locale("vi", "VN"))
+        );
+        String currentTime = nowVietnam.format(DateTimeFormatter.ofPattern("HH:mm"));
+        int currentHour = nowVietnam.getHour();
+
+        // Tính tuần hiện tại
+        ZonedDateTime startOfWeek = nowVietnam.minusDays(nowVietnam.getDayOfWeek().getValue() - 1)
+            .toLocalDate().atStartOfDay(nowVietnam.getZone());
+        ZonedDateTime endOfWeek = startOfWeek.plusDays(6);
+
+        // Tính tháng trước
+        ZonedDateTime lastMonth = nowVietnam.minusMonths(1);
+        ZonedDateTime startOfLastMonth = lastMonth.withDayOfMonth(1);
+        ZonedDateTime endOfLastMonth = lastMonth.withDayOfMonth(lastMonth.toLocalDate().lengthOfMonth());
+
+        // Tính tuần trước
+        ZonedDateTime lastWeekStart = startOfWeek.minusWeeks(1);
+        ZonedDateTime lastWeekEnd = startOfWeek.minusDays(1);
+
+        // Chiều/Sáng/Tối
+        String timeOfDay;
+        if (currentHour < 12) {
+            timeOfDay = "SÁNG";
+        } else if (currentHour < 18) {
+            timeOfDay = "CHIỀU";
+        } else {
+            timeOfDay = "TỐI";
+        }
+
+        // Định dạng ngày theo kiểu số cho AI dễ parse
+        String today = nowVietnam.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String tomorrow = nowVietnam.plusDays(1).format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String yesterday = nowVietnam.minusDays(1).format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String startOfWeekStr = startOfWeek.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String endOfWeekStr = endOfWeek.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String lastWeekStartStr = lastWeekStart.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String lastWeekEndStr = lastWeekEnd.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String lastMonthStartStr = startOfLastMonth.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String lastMonthEndStr = endOfLastMonth.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+        return """
+            ═══════════════════════════════════════════════════
+            THÔNG TIN THỜI GIAN HIỆN TẠI (RẤT QUAN TRỌNG)
+            ═══════════════════════════════════════════════════
+            HÔM NAY = %s (%s)
+            Giờ hiện tại: %s
+
+            Tuần này: %s → %s
+            Tuần trước: %s → %s
+            Tháng trước: %s → %s
+            ═══════════════════════════════════════════════════
+
+            QUY TẮC SO SÁNH (BẮT BUỘC):
+            - "Hôm nay" = %s (ví dụ: 29/04/2026)
+            - "Ngày mai" = %s (ví dụ: 30/04/2026) ← KHÔNG PHẢI %s!
+            - "Hôm qua" = %s
+            - "Chiều nay" = %s, 12:00-18:00
+            - "Sáng nay" = %s, 00:00-12:00 (hiện tại: %s)
+            - "Trong tuần này" = %s → %s
+            - "Tuần trước" = %s → %s (không có task → [])
+            - "Tháng trước" = %s → %s (không có task → [])
+            - "Vào lúc XhY" = tìm task deadline gần nhất với XhY
+            ═══════════════════════════════════════════════════
+            """.formatted(
+                formatted, today, currentTime,
+                startOfWeekStr, endOfWeekStr,
+                lastWeekStartStr, lastWeekEndStr,
+                lastMonthStartStr, lastMonthEndStr,
+                today,
+                tomorrow, today,    // ngày mai ≠ hôm nay
+                yesterday,
+                today, today, currentTime,
+                startOfWeekStr, endOfWeekStr,
+                lastWeekStartStr, lastWeekEndStr,
+                lastMonthStartStr, lastMonthEndStr
+            );
     }
 }
