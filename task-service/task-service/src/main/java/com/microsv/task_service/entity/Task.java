@@ -43,7 +43,7 @@ public class Task {
 
 //    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private OffsetDateTime createdAt;
+    private OffsetDateTime createdAt;  //đây chính là starttime công việc
 
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;

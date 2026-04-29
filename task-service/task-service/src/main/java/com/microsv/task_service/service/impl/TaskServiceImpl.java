@@ -8,6 +8,7 @@ import com.microsv.task_service.dto.request.EventCreationRequest;
 import com.microsv.task_service.dto.request.TaskCreationRequest;
 import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.*;
+import com.microsv.task_service.dto.EventReminderData;
 import com.microsv.task_service.entity.Event;
 import com.microsv.task_service.entity.Task;
 import com.microsv.task_service.enumeration.PriorityLevel;
@@ -20,6 +21,7 @@ import com.microsv.task_service.repository.TaskRepository;
 import com.microsv.task_service.service.TaskService;
 import com.microsv.task_service.service.ClaudeTaskConvertService;
 import com.microsv.task_service.service.TaskCacheService;
+import com.microsv.task_service.service.EventReminderRedisService;
 import com.microsv.task_service.util.DateUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +53,7 @@ public class TaskServiceImpl implements TaskService {
     EventEmailProducer eventEmailProducer;
     TaskCacheService taskCacheService;
     ClaudeTaskConvertService claudeTaskConvertService;
+    EventReminderRedisService eventReminderRedisService;
 
     @Override
     @Transactional
@@ -61,7 +64,13 @@ public class TaskServiceImpl implements TaskService {
             
             if (Boolean.TRUE.equals(request.getIsEvent()) && request.getEventCreationRequest() != null) {
                 Event savedEvent = eventRepository.save(eventMapper.toEvent(request.getEventCreationRequest(), savedTask.getTaskId()));
+                
+                // Lưu event reminder vào Redis để scheduler check
+                saveEventReminderToRedis(savedEvent, savedTask);
+                
+                // Gửi message để EmailService lưu invitedEmails
                 sendEventEmails(savedEvent, request.getEventCreationRequest());
+                
                 log.info("Event created successfully with eventId: {}, taskId: {}", savedEvent.getEventId(), savedTask.getTaskId());
             }
             
@@ -71,6 +80,20 @@ public class TaskServiceImpl implements TaskService {
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
         }
+    }
+    
+    private void saveEventReminderToRedis(Event event, Task task) {
+        EventReminderData reminderData = EventReminderData.builder()
+                .eventId(event.getEventId())
+                .taskId(task.getTaskId())
+                .eventDescription(event.getEventDescription())
+                .linkEvent(event.getLinkEvent())
+                .location(event.getLocation())
+                .isOnline(event.getIsOnline())
+                .reminderMinutesBefore(event.getReminderMinutesBefore())
+                .startTime(task.getCreatedAt()) // createdAt = startTime (thời điểm bắt đầu)
+                .build();
+        eventReminderRedisService.saveEventReminder(reminderData);
     }
     
     private void sendEventEmails(Event event, EventCreationRequest request) {
@@ -172,6 +195,12 @@ public class TaskServiceImpl implements TaskService {
         try {
             Task task = taskRepository.findByTaskIdAndUserId(taskId, userId)
                     .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+
+            // Xóa event reminder khỏi Redis nếu là event
+            eventRepository.findByTaskId(taskId).ifPresent(event -> {
+                eventReminderRedisService.deleteEventReminder(event.getEventId());
+                eventRepository.delete(event);
+            });
 
             taskRepository.delete(task);
             syncTasksToRedis(userId);

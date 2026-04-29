@@ -1,4 +1,4 @@
-package com.microsv.task_service.dto.message;
+package com.microsv.task_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,13 +12,15 @@ import java.time.OffsetDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventReminderMessage implements Serializable {
+public class EventReminderData implements Serializable {
     private static final long serialVersionUID = 1L;
     
     private Long eventId;
+    private Long taskId;
     private String eventDescription;
     private String linkEvent;
     private String location;
     private Boolean isOnline;
+    private Integer reminderMinutesBefore;
     private OffsetDateTime startTime;
 }
