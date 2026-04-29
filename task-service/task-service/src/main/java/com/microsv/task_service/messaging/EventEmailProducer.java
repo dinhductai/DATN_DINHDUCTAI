@@ -1,6 +1,7 @@
 package com.microsv.task_service.messaging;
 
 import com.microsv.task_service.dto.message.EventCreationMessage;
+import com.microsv.task_service.dto.message.EventDeleteMessage;
 import com.microsv.task_service.dto.message.EventReminderMessage;
 import com.microsv.task_service.dto.message.EventUpdateMessage;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,20 @@ public class EventEmailProducer {
             log.info("Event update message sent successfully for eventId: {}", message.getEventId());
         } catch (Exception e) {
             log.error("Failed to send event update message for eventId {}: {}", message.getEventId(), e.getMessage());
+        }
+    }
+    
+    // Gửi message khi xóa event: gửi eventId để email service xóa invitedEmails
+    public void sendEventDelete(EventDeleteMessage message) {
+        try {
+            log.info("Sending event delete message to RabbitMQ for eventId: {}", message.getEventId());
+            rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EVENT_DELETE_QUEUE,
+                message
+            );
+            log.info("Event delete message sent successfully for eventId: {}", message.getEventId());
+        } catch (Exception e) {
+            log.error("Failed to send event delete message for eventId {}: {}", message.getEventId(), e.getMessage());
         }
     }
 }

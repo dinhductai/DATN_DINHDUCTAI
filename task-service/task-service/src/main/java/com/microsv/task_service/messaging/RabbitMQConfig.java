@@ -31,6 +31,10 @@ public class RabbitMQConfig {
     public static final String EVENT_UPDATE_EXCHANGE = "event-update-exchange";
     public static final String EVENT_UPDATE_ROUTING_KEY = "event.update";
     
+    public static final String EVENT_DELETE_QUEUE = "event-delete-queue";
+    public static final String EVENT_DELETE_EXCHANGE = "event-delete-exchange";
+    public static final String EVENT_DELETE_ROUTING_KEY = "event.delete";
+    
     @Bean
     public Queue taskNotificationQueue() {
         return new Queue(TASK_NOTIFICATION_QUEUE, true);
@@ -54,6 +58,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue eventUpdateQueue() {
         return new Queue(EVENT_UPDATE_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue eventDeleteQueue() {
+        return new Queue(EVENT_DELETE_QUEUE, true);
     }
     
     @Bean

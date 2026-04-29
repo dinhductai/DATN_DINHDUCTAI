@@ -261,16 +261,34 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void deleteTask(Long taskId, Long userId) {
+    public void deleteTask(Long taskId, Long eventId, Long userId) {
         try {
             Task task = taskRepository.findByTaskIdAndUserId(taskId, userId)
                     .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
 
-            // Xóa event reminder khỏi Redis nếu là event
-            eventRepository.findByTaskId(taskId).ifPresent(event -> {
-                eventReminderRedisService.deleteEventReminder(event.getEventId());
-                eventRepository.delete(event);
-            });
+            // Nếu có eventId → xóa event cụ thể và gửi message để email service xóa invitedEmails
+            if (eventId != null) {
+                eventRepository.findById(eventId).ifPresent(event -> {
+                    eventReminderRedisService.deleteEventReminder(event.getEventId());
+                    eventRepository.delete(event);
+                    eventEmailProducer.sendEventDelete(
+                            com.microsv.task_service.dto.message.EventDeleteMessage.builder()
+                                    .eventId(eventId)
+                                    .build()
+                    );
+                });
+            } else {
+                // Không có eventId → xóa tất cả event liên quan (cascade)
+                eventRepository.findByTaskId(taskId).ifPresent(event -> {
+                    eventReminderRedisService.deleteEventReminder(event.getEventId());
+                    eventRepository.delete(event);
+                    eventEmailProducer.sendEventDelete(
+                            com.microsv.task_service.dto.message.EventDeleteMessage.builder()
+                                    .eventId(event.getEventId())
+                                    .build()
+                    );
+                });
+            }
 
             taskRepository.delete(task);
             syncTasksToRedis(userId);

@@ -1,6 +1,7 @@
 package com.microsv.task_service.controller;
 
 import com.microsv.task_service.dto.request.TaskCreationRequest;
+import com.microsv.task_service.dto.request.TaskDeleteRequest;
 import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.*;
 import com.microsv.task_service.entity.Task;
@@ -99,9 +100,10 @@ public class TaskController {
     //Xóa task
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long taskId,
+                                           @RequestParam(required = false) Long eventId,
                                            @AuthenticationPrincipal Jwt jwt) {
         Long userId = Long.parseLong(jwt.getSubject());
-        taskService.deleteTask(taskId, userId);
+        taskService.deleteTask(taskId, eventId, userId);
         return ResponseEntity.noContent().build();
     }
 

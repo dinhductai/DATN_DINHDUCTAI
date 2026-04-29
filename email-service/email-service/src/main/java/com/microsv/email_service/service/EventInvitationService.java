@@ -1,5 +1,6 @@
 package com.microsv.email_service.service;
 
+import com.microsv.email_service.dto.message.EventDeleteMessage;
 import com.microsv.email_service.dto.message.EventReminderMessage;
 import com.microsv.email_service.dto.message.EventUpdateMessage;
 import com.microsv.email_service.entity.EventInvitation;
@@ -90,5 +91,19 @@ public class EventInvitationService {
         }
         
         log.info("Updated {} invitations for eventId: {}", newEmails.size(), eventId);
+    }
+    
+    @Transactional
+    public void deleteInvitations(EventDeleteMessage message) {
+        Long eventId = message.getEventId();
+        List<EventInvitation> invitations = eventInvitationRepository.findByEventId(eventId);
+        
+        if (invitations.isEmpty()) {
+            log.info("No invitations found for eventId: {}, nothing to delete", eventId);
+            return;
+        }
+        
+        eventInvitationRepository.deleteAll(invitations);
+        log.info("Deleted {} invitations for eventId: {}", invitations.size(), eventId);
     }
 }

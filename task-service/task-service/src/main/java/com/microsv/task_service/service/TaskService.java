@@ -15,7 +15,7 @@ public interface TaskService {
     TaskResponse getTask(Long taskId, Long userId);
     List<TaskResponse> getAllTasksByUser(Long userId);
     List<TaskResponse> getTasksByStatus(Long userId, TaskStatus status);
-    void deleteTask(Long taskId, Long userId);
+    void deleteTask(Long taskId, Long eventId, Long userId);
     TaskResponse updateTask(Long taskId, TaskUpdateRequest request, Long userId);
     TaskStatisticResponse getTaskStatistics(Long userId);
     TaskResponse updateTaskStatus(Long taskId, TaskStatus status, Long userId);
