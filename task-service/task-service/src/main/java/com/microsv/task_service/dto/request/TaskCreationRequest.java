@@ -20,4 +20,7 @@ public class TaskCreationRequest {
     private OffsetDateTime deadline;
 //    @NotBlank(message = "Priority is required")
     private PriorityLevel priority;
+    
+    private Boolean isEvent;
+    private EventCreationRequest eventCreationRequest;
 }

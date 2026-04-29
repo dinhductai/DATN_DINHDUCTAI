@@ -2,13 +2,20 @@ package com.microsv.task_service.service.impl;
 
 import com.microsv.common.enumeration.ErrorCode;
 import com.microsv.common.exception.BaseException;
+import com.microsv.task_service.dto.message.EventCreationMessage;
+import com.microsv.task_service.dto.message.EventReminderMessage;
+import com.microsv.task_service.dto.request.EventCreationRequest;
 import com.microsv.task_service.dto.request.TaskCreationRequest;
 import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.*;
+import com.microsv.task_service.entity.Event;
 import com.microsv.task_service.entity.Task;
 import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
+import com.microsv.task_service.mapper.EventMapper;
 import com.microsv.task_service.mapper.TaskMapper;
+import com.microsv.task_service.messaging.EventEmailProducer;
+import com.microsv.task_service.repository.EventRepository;
 import com.microsv.task_service.repository.TaskRepository;
 import com.microsv.task_service.service.TaskService;
 import com.microsv.task_service.service.ClaudeTaskConvertService;
@@ -20,6 +27,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -38,19 +46,40 @@ import org.springframework.data.domain.Pageable;
 public class TaskServiceImpl implements TaskService {
     TaskMapper taskMapper;
     TaskRepository taskRepository;
+    EventRepository eventRepository;
+    EventMapper eventMapper;
+    EventEmailProducer eventEmailProducer;
     TaskCacheService taskCacheService;
     ClaudeTaskConvertService claudeTaskConvertService;
 
     @Override
+    @Transactional
     public TaskResponse createTask(TaskCreationRequest request, Long userId) {
         try {
 //            DateUtil.ValidateDeadline(request.getDeadline());
             Task savedTask = taskRepository.save(taskMapper.taskCreationRequestToTask(request, userId));
+            
+            if (Boolean.TRUE.equals(request.getIsEvent()) && request.getEventCreationRequest() != null) {
+                Event savedEvent = eventRepository.save(eventMapper.toEvent(request.getEventCreationRequest(), savedTask.getTaskId()));
+                sendEventEmails(savedEvent, request.getEventCreationRequest());
+                log.info("Event created successfully with eventId: {}, taskId: {}", savedEvent.getEventId(), savedTask.getTaskId());
+            }
+            
             TaskResponse response = taskMapper.toTaskResponse(savedTask);
             syncTasksToRedis(userId);
             return response;
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
+        }
+    }
+    
+    private void sendEventEmails(Event event, EventCreationRequest request) {
+        if (request.getInvitedEmails() != null && !request.getInvitedEmails().isEmpty()) {
+            EventCreationMessage message = EventCreationMessage.builder()
+                    .eventId(event.getEventId())
+                    .invitedEmails(request.getInvitedEmails())
+                    .build();
+            eventEmailProducer.sendEventCreation(message);
         }
     }
 

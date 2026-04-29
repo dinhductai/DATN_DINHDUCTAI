@@ -2,15 +2,22 @@ package com.microsv.task_service.mapper;
 
 import com.microsv.task_service.dto.request.TaskCreationRequest;
 import com.microsv.task_service.dto.response.*;
+import com.microsv.task_service.entity.Event;
 import com.microsv.task_service.entity.Task;
 import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
+import com.microsv.task_service.repository.EventRepository;
 import com.microsv.task_service.util.EnumUtil;
 import jakarta.persistence.Tuple;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TaskMapper {
+    private final EventRepository eventRepository;
+
+    public TaskMapper(EventRepository eventRepository) {
+        this.eventRepository = eventRepository;
+    }
     public Task taskCreationRequestToTask(TaskCreationRequest request, Long userId){
         return Task.builder()
                 .title(request.getTitle())
@@ -24,6 +31,8 @@ public class TaskMapper {
     }
 
     public TaskResponse toTaskResponse(Task task) {
+        Event event = eventRepository.findByTaskId(task.getTaskId()).orElse(null);
+        
         return TaskResponse.builder()
                 .taskId(task.getTaskId())
                 .title(task.getTitle())
@@ -34,6 +43,8 @@ public class TaskMapper {
                 .createdAt(task.getCreatedAt())
                 .completedAt(task.getCompletedAt())
                 .userId(task.getUserId())
+                .isEvent(event != null)
+                .eventId(event != null ? event.getEventId() : null)
                 .build();
     }
 

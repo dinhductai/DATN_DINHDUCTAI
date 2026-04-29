@@ -8,10 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
-    
     Optional<Event> findByTaskId(Long taskId);
-    
     boolean existsByTaskId(Long taskId);
-    
-    void deleteByTaskId(Long taskId);
 }

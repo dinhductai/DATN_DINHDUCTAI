@@ -15,9 +15,36 @@ public class RabbitMQConfig {
     public static final String TASK_NOTIFICATION_EXCHANGE = "task-notification-exchange";
     public static final String TASK_NOTIFICATION_ROUTING_KEY = "task.notification";
     
+    public static final String EVENT_EMAIL_QUEUE = "event-email-queue";
+    public static final String EVENT_EMAIL_EXCHANGE = "event-email-exchange";
+    public static final String EVENT_EMAIL_ROUTING_KEY = "event.email";
+    
+    public static final String EVENT_CREATION_QUEUE = "event-creation-queue";
+    public static final String EVENT_CREATION_EXCHANGE = "event-creation-exchange";
+    public static final String EVENT_CREATION_ROUTING_KEY = "event.creation";
+    
+    public static final String EVENT_REMINDER_QUEUE = "event-reminder-queue";
+    public static final String EVENT_REMINDER_EXCHANGE = "event-reminder-exchange";
+    public static final String EVENT_REMINDER_ROUTING_KEY = "event.reminder";
+    
     @Bean
     public Queue taskNotificationQueue() {
         return new Queue(TASK_NOTIFICATION_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue eventEmailQueue() {
+        return new Queue(EVENT_EMAIL_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue eventCreationQueue() {
+        return new Queue(EVENT_CREATION_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue eventReminderQueue() {
+        return new Queue(EVENT_REMINDER_QUEUE, true);
     }
     
     @Bean

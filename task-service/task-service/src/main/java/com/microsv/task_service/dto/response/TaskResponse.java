@@ -24,4 +24,6 @@ public class TaskResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime completedAt;
     private Long userId;
+    private Boolean isEvent;
+    private Long eventId;
 }

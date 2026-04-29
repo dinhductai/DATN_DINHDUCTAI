@@ -1,7 +1,6 @@
 package com.microsv.email_service.config;
 
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -12,11 +11,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
     
-    public static final String TASK_NOTIFICATION_QUEUE = "task-notification-queue";
+    public static final String EVENT_CREATION_QUEUE = "event-creation-queue";
+    public static final String EVENT_REMINDER_QUEUE = "event-reminder-queue";
     
     @Bean
-    public Queue taskNotificationQueue() {
-        return new Queue(TASK_NOTIFICATION_QUEUE, true);
+    public Queue eventCreationQueue() {
+        return new Queue(EVENT_CREATION_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue eventReminderQueue() {
+        return new Queue(EVENT_REMINDER_QUEUE, true);
     }
     
     @Bean
@@ -29,16 +34,5 @@ public class RabbitMQConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(jsonMessageConverter());
         return rabbitTemplate;
-    }
-    
-    @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
-            ConnectionFactory connectionFactory) {
-        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(jsonMessageConverter());
-        factory.setConcurrentConsumers(3);
-        factory.setMaxConcurrentConsumers(10);
-        return factory;
     }
 }
