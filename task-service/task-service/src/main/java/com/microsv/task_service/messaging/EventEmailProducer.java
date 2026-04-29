@@ -2,6 +2,7 @@ package com.microsv.task_service.messaging;
 
 import com.microsv.task_service.dto.message.EventCreationMessage;
 import com.microsv.task_service.dto.message.EventReminderMessage;
+import com.microsv.task_service.dto.message.EventUpdateMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -41,6 +42,22 @@ public class EventEmailProducer {
             log.info("Event reminder message sent successfully for eventId: {}", message.getEventId());
         } catch (Exception e) {
             log.error("Failed to send event reminder message for eventId {}: {}", message.getEventId(), e.getMessage());
+        }
+    }
+    
+    // Gửi message khi update event: gửi eventId + invitedEmails để email service cập nhật
+    public void sendEventUpdate(EventUpdateMessage message) {
+        try {
+            log.info("Sending event update message to RabbitMQ for eventId: {}, invitedEmails count: {}", 
+                    message.getEventId(), 
+                    message.getInvitedEmails() != null ? message.getInvitedEmails().size() : 0);
+            rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EVENT_UPDATE_QUEUE,
+                message
+            );
+            log.info("Event update message sent successfully for eventId: {}", message.getEventId());
+        } catch (Exception e) {
+            log.error("Failed to send event update message for eventId {}: {}", message.getEventId(), e.getMessage());
         }
     }
 }

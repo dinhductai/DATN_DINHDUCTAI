@@ -18,4 +18,8 @@ public class TaskUpdateRequest {
     private OffsetDateTime deadline;
     private PriorityLevel priority;
     private TaskStatus status;
+    
+    // Event update fields
+    private Long eventId;
+    private EventUpdateRequest eventUpdateRequest;
 }

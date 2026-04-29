@@ -27,6 +27,10 @@ public class RabbitMQConfig {
     public static final String EVENT_REMINDER_EXCHANGE = "event-reminder-exchange";
     public static final String EVENT_REMINDER_ROUTING_KEY = "event.reminder";
     
+    public static final String EVENT_UPDATE_QUEUE = "event-update-queue";
+    public static final String EVENT_UPDATE_EXCHANGE = "event-update-exchange";
+    public static final String EVENT_UPDATE_ROUTING_KEY = "event.update";
+    
     @Bean
     public Queue taskNotificationQueue() {
         return new Queue(TASK_NOTIFICATION_QUEUE, true);
@@ -45,6 +49,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue eventReminderQueue() {
         return new Queue(EVENT_REMINDER_QUEUE, true);
+    }
+    
+    @Bean
+    public Queue eventUpdateQueue() {
+        return new Queue(EVENT_UPDATE_QUEUE, true);
     }
     
     @Bean

@@ -4,7 +4,9 @@ import com.microsv.common.enumeration.ErrorCode;
 import com.microsv.common.exception.BaseException;
 import com.microsv.task_service.dto.message.EventCreationMessage;
 import com.microsv.task_service.dto.message.EventReminderMessage;
+import com.microsv.task_service.dto.message.EventUpdateMessage;
 import com.microsv.task_service.dto.request.EventCreationRequest;
+import com.microsv.task_service.dto.request.EventUpdateRequest;
 import com.microsv.task_service.dto.request.TaskCreationRequest;
 import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.*;
@@ -144,6 +146,7 @@ public class TaskServiceImpl implements TaskService {
 
 
     @Override
+    @Transactional
     public TaskResponse updateTask(Long taskId, TaskUpdateRequest request, Long userId) {
         try{
         Task task = taskRepository.findByTaskIdAndUserId(taskId, userId)
@@ -153,6 +156,7 @@ public class TaskServiceImpl implements TaskService {
 
 //        DateUtil.ValidateDeadline(request.getDeadline());
 
+        OffsetDateTime oldCreatedAt = task.getCreatedAt();
         task.setDeadline(request.getDeadline());
         task.setPriority(request.getPriority());
         if (request.getStatus() != null) {
@@ -164,10 +168,76 @@ public class TaskServiceImpl implements TaskService {
         Task updatedTask = taskRepository.save(task);
         TaskResponse response = taskMapper.toTaskResponse(updatedTask);
         syncTasksToRedis(userId);
+        
+        // Xử lý update event nếu có
+        if (request.getEventId() != null && request.getEventUpdateRequest() != null) {
+            handleEventUpdate(task, request.getEventId(), request.getEventUpdateRequest(), oldCreatedAt);
+        }
+        
         return response;
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
         }
+    }
+    
+    private void handleEventUpdate(Task task, Long eventId, EventUpdateRequest eventUpdateRequest, OffsetDateTime oldCreatedAt) {
+        eventRepository.findByEventId(eventId).ifPresent(event -> {
+            boolean reminderChanged = false;
+            
+            // Cập nhật các trường event
+            if (eventUpdateRequest.getEventDescription() != null) {
+                event.setEventDescription(eventUpdateRequest.getEventDescription());
+            }
+            if (eventUpdateRequest.getLinkEvent() != null) {
+                event.setLinkEvent(eventUpdateRequest.getLinkEvent());
+            }
+            if (eventUpdateRequest.getLocation() != null) {
+                event.setLocation(eventUpdateRequest.getLocation());
+            }
+            if (eventUpdateRequest.getIsOnline() != null) {
+                event.setIsOnline(eventUpdateRequest.getIsOnline());
+            }
+            if (eventUpdateRequest.getReminderMinutesBefore() != null) {
+                if (!eventUpdateRequest.getReminderMinutesBefore().equals(event.getReminderMinutesBefore())) {
+                    reminderChanged = true;
+                    event.setReminderMinutesBefore(eventUpdateRequest.getReminderMinutesBefore());
+                }
+            }
+            
+            eventRepository.save(event);
+            
+            // Kiểm tra thay đổi createdAt (startTime)
+            if (oldCreatedAt != null && task.getCreatedAt() != null && !oldCreatedAt.equals(task.getCreatedAt())) {
+                reminderChanged = true;
+            }
+            
+            // Nếu có thay đổi về reminder → tính lại ZSET
+            if (reminderChanged) {
+                EventReminderData reminderData = EventReminderData.builder()
+                        .eventId(event.getEventId())
+                        .taskId(task.getTaskId())
+                        .eventDescription(event.getEventDescription())
+                        .linkEvent(event.getLinkEvent())
+                        .location(event.getLocation())
+                        .isOnline(event.getIsOnline())
+                        .reminderMinutesBefore(event.getReminderMinutesBefore())
+                        .startTime(task.getCreatedAt())
+                        .build();
+                eventReminderRedisService.updateEventReminder(reminderData);
+                log.info("Updated event reminder in Redis for eventId: {}", event.getEventId());
+            }
+            
+            // Nếu có invitedEmails mới → gửi message cập nhật email service
+            if (eventUpdateRequest.getInvitedEmails() != null) {
+                EventUpdateMessage updateMessage = EventUpdateMessage.builder()
+                        .eventId(event.getEventId())
+                        .invitedEmails(eventUpdateRequest.getInvitedEmails())
+                        .build();
+                eventEmailProducer.sendEventUpdate(updateMessage);
+                log.info("Sent event update message for eventId: {} with {} invitedEmails", 
+                        event.getEventId(), eventUpdateRequest.getInvitedEmails().size());
+            }
+        });
     }
 
     @Override

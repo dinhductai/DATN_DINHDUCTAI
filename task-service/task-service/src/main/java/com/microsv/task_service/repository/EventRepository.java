@@ -9,5 +9,6 @@ import java.util.Optional;
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
     Optional<Event> findByTaskId(Long taskId);
+    Optional<Event> findByEventId(Long eventId);
     boolean existsByTaskId(Long taskId);
 }
