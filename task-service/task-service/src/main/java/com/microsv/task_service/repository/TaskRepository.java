@@ -6,6 +6,7 @@ import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
 import com.microsv.task_service.repository.query.TaskQuery;
 import jakarta.persistence.Tuple;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -81,7 +82,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             CASE WHEN t.status = 'TODO' THEN 0 ELSE 1 END,
             CASE t.priority WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
             t.deadline ASC
-        LIMIT :limit
         """, nativeQuery = true)
     List<Task> findFilteredTasks(
             @Param("userId") Long userId,
@@ -89,6 +89,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             @Param("priority") String priority,
             @Param("fromDate") OffsetDateTime fromDate,
             @Param("toDate") OffsetDateTime toDate,
-            @Param("limit") int limit
+            Pageable pageable
     );
 }

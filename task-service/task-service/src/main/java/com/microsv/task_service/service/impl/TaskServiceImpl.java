@@ -28,6 +28,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Service
@@ -257,7 +260,10 @@ public class TaskServiceImpl implements TaskService {
         String statusStr = status != null ? status.name() : null;
         String priorityStr = priority != null ? priority.name() : null;
 
-        List<Task> tasks = taskRepository.findFilteredTasks(userId, statusStr, priorityStr, fromDateTime, toDateTime, limit);
+        int pageLimit = limit != null ? limit : 20;
+        Pageable pageable = PageRequest.of(0, pageLimit);
+
+        List<Task> tasks = taskRepository.findFilteredTasks(userId, statusStr, priorityStr, fromDateTime, toDateTime, pageable);
         return tasks.stream().map(taskMapper::toTaskResponse).collect(Collectors.toList());
     }
 

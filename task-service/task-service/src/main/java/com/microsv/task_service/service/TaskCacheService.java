@@ -105,4 +105,26 @@ public class TaskCacheService {
         String taskKey = TASK_CACHE_PREFIX + userId;
         return Boolean.TRUE.equals(redisTemplate.hasKey(taskKey));
     }
+
+    /**
+     * Get cached AI task JSON, refresh TTL if exists, return null if not exists
+     * Use this when user logs in - if cache exists, refresh TTL to 24h; otherwise return null
+     */
+    public String getCachedTaskJsonWithRefresh(Long userId) {
+        String key = AI_TASK_JSON_PREFIX + userId;
+        try {
+            // Try to get directly - if exists, refresh TTL
+            Object cached = redisTemplate.opsForValue().get(key);
+            if (cached != null) {
+                // Cache exists - refresh TTL to 24h
+                redisTemplate.expire(key, TASK_CACHE_TTL);
+                log.info("Cache HIT - Retrieved cached AI task JSON for user {} and refreshed TTL", userId);
+                return cached.toString();
+            }
+            log.info("Cache MISS for user {}", userId);
+        } catch (Exception e) {
+            log.error("Failed to get cached AI task JSON for user {}: {}", userId, e.getMessage(), e);
+        }
+        return null;
+    }
 }

@@ -33,11 +33,20 @@ public class TaskInternalController {
 
     @GetMapping("/ai/json")
     public ResponseEntity<String> getTasksJsonForAI(@RequestHeader("userId") Long userId) {
-        String cachedJson = taskCacheService.getCachedTaskJson(userId);
+        // Try to get from cache and refresh TTL if exists
+        String cachedJson = taskCacheService.getCachedTaskJsonWithRefresh(userId);
         if (cachedJson != null) {
             return ResponseEntity.ok(cachedJson);
         }
-        return ResponseEntity.noContent().build();
+
+        // Cache miss - load from DB, convert with Claude, cache, then return
+        taskService.syncTasksToCache(userId);
+        String newJson = taskCacheService.getCachedTaskJson(userId);
+        if (newJson != null) {
+            return ResponseEntity.ok(newJson);
+        }
+
+        return ResponseEntity.ok("{\"tasks\": []}");
     }
 
     @PostMapping("/ai/refresh")

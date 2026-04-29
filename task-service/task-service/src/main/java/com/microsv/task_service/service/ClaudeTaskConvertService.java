@@ -1,9 +1,12 @@
 package com.microsv.task_service.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.microsv.task_service.entity.Task;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -27,16 +30,18 @@ public class ClaudeTaskConvertService {
     public ClaudeTaskConvertService(TaskCacheService taskCacheService) {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         this.taskCacheService = taskCacheService;
     }
 
     public String convertTasksToJson(Long userId, List<Task> tasks) {
         try {
             String taskData = objectMapper.writeValueAsString(tasks);
-            
+
             String prompt = """
                 Convert the following task data to a clean, AI-chatbot-friendly JSON format.
-                
+
                 Requirements:
                 - Output ONLY valid JSON, no explanation text
                 - Include all tasks with: title, description, deadline, status, priority, createdAt, completedAt
@@ -45,7 +50,7 @@ public class ClaudeTaskConvertService {
                 - Priority should be: "Cao" (HIGH), "Trung bình" (MEDIUM), "Thấp" (LOW)
                 - Add a summary section at the top with: totalTasks, todoCount, inProgressCount, doneCount, overdueCount
                 - Add friendly deadline info: "Còn X ngày" or "Quá hạn X ngày"
-                
+
                 TASK DATA:
                 %s
                 """.formatted(taskData);
@@ -78,12 +83,23 @@ public class ClaudeTaskConvertService {
         message.put("content", prompt);
         requestBody.put("messages", List.of(message));
 
-        Map<String, String> headers = new HashMap<>();
-        headers.put("x-api-key", claudeApiKey);
-        headers.put("anthropic-version", "2023-06-01");
-        headers.put("Content-Type", "application/json");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("x-api-key", claudeApiKey);
+        headers.set("anthropic-version", "2023-06-01");
 
-        return restTemplate.postForObject(CLAUDE_API_URL, requestBody, Map.class, headers);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        log.info("Calling Claude API with key: {}", claudeApiKey.substring(0, 10) + "...");
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                CLAUDE_API_URL,
+                HttpMethod.POST,
+                entity,
+                Map.class
+        );
+
+        return response.getBody();
     }
 
     @SuppressWarnings("unchecked")
