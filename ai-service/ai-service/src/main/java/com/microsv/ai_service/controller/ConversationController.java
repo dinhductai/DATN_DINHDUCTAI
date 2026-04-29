@@ -1,7 +1,7 @@
 package com.microsv.ai_service.controller;
 
+import com.microsv.ai_service.dto.response.AIRichResponse;
 import com.microsv.ai_service.dto.response.ChatAIConversationResponse;
-import com.microsv.ai_service.dto.response.ChatAIResponse;
 import com.microsv.ai_service.entity.ConversationMemory;
 import com.microsv.ai_service.service.impl.ChatAIServiceImpl;
 import com.microsv.ai_service.service.impl.ChatMemoryServiceImpl;
@@ -16,7 +16,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -38,8 +37,23 @@ public class ConversationController {
         if (conversationId == null || conversationId.isBlank()) {
             conversationId = UUID.randomUUID().toString();
         }
-        String chatAIResponses = chatAIService.chat(message, file,conversationId,userId);
-        ChatAIConversationResponse response = new ChatAIConversationResponse(conversationId,chatAIResponses);
+        String chatAIResponses = chatAIService.chat(message, file, conversationId, userId);
+        ChatAIConversationResponse response = new ChatAIConversationResponse(conversationId, chatAIResponses);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/rich")
+    public ResponseEntity<AIRichResponse> chatRich(
+            @RequestParam(value = "message", required = false) String message,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "conversationId", required = false) String conversationId,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId  = Long.parseLong(jwt.getSubject());
+        if (conversationId == null || conversationId.isBlank()) {
+            conversationId = UUID.randomUUID().toString();
+        }
+        AIRichResponse response = chatAIService.chatRich(message, file, conversationId, userId);
+        response.setConversationId(conversationId);
         return ResponseEntity.ok(response);
     }
 
