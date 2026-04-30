@@ -6,6 +6,7 @@ import com.microsv.user_service.dto.request.UserUpdateRequest;
 import com.microsv.user_service.dto.response.UserAuthResponse;
 import com.microsv.user_service.dto.response.UserResponse;
 import com.microsv.user_service.entity.User;
+import com.microsv.user_service.service.CloudinaryService;
 import com.microsv.user_service.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -25,11 +27,18 @@ import java.util.List;
 public class UserController {
 
     UserService userService;
+    CloudinaryService cloudinaryService;
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody UserCreationRequest request) {
         UserResponse response = userService.createUser(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/upload-profile/{userId}")
+    public ResponseEntity<String> uploadProfile(@PathVariable Long userId, @RequestParam("file") MultipartFile file) {
+        String url = cloudinaryService.uploadProfileImage(userId, file);
+        return ResponseEntity.ok(url);
     }
 
 

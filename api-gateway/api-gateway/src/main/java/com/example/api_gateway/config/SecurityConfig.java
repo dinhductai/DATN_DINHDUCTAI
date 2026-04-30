@@ -89,6 +89,7 @@ public class SecurityConfig {
                         new PathPatternParserServerWebExchangeMatcher("/api/auth/login"),
                         new PathPatternParserServerWebExchangeMatcher("/api/auth/register"),
                         new PathPatternParserServerWebExchangeMatcher("/api/users/register"),
+                        new PathPatternParserServerWebExchangeMatcher("/api/users/upload-profile/**"),
                         // Push notifications disabled
                         // new PathPatternParserServerWebExchangeMatcher("/api/notifications/**"),
                         new PathPatternParserServerWebExchangeMatcher("/eureka/**"),

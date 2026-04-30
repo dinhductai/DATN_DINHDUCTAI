@@ -23,13 +23,17 @@ public class UserMapper {
     }
 
     public User toCreateUser(UserCreationRequest request, Role role) {
-        return User.builder()
+        User.UserBuilder builder = User.builder()
                 .userName(request.getUserName())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
-                .profile(request.getProfile())
-                .roles(Set.of(role))
-                .build();
+                .roles(Set.of(role));
+        
+        if (request.getProfile() != null && !request.getProfile().isEmpty()) {
+            builder.profile(request.getProfile());
+        }
+        
+        return builder.build();
     }
 
     public UserResponse toUserResponse(User user) {

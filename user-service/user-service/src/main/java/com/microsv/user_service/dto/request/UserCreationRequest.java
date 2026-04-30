@@ -21,6 +21,5 @@ public class UserCreationRequest {
     @Email
     private String email;
 
-    @NotBlank(message = "Profile is required")
     private String profile;
 }

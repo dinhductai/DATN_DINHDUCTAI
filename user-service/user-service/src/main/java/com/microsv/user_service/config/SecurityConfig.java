@@ -34,6 +34,7 @@ public class SecurityConfig {
         http
                 .securityMatcher(new OrRequestMatcher(
                         AntPathRequestMatcher.antMatcher("/api/users/register"),
+                        AntPathRequestMatcher.antMatcher("/api/users/upload-profile/**"),
                         AntPathRequestMatcher.antMatcher("/internal/**"),
                         AntPathRequestMatcher.antMatcher("/actuator/**")
                 ))
