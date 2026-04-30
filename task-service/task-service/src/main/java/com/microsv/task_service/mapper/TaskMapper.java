@@ -11,6 +11,9 @@ import com.microsv.task_service.util.EnumUtil;
 import jakarta.persistence.Tuple;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Component
 public class TaskMapper {
     private final EventRepository eventRepository;
@@ -48,9 +51,35 @@ public class TaskMapper {
                 .build();
     }
 
-    public TaskResponse tupleToTaskResponse(Tuple tuple) {
+    public TaskResponse toTaskResponse(Task task, Map<Long, Event> eventMap) {
+        Event event = eventMap.get(task.getTaskId());
+        
         return TaskResponse.builder()
-                .taskId(tuple.get("taskId", Long.class))
+                .taskId(task.getTaskId())
+                .title(task.getTitle())
+                .description(task.getDescription())
+                .deadline(task.getDeadline())
+                .status(task.getStatus())
+                .priority(task.getPriority())
+                .createdAt(task.getCreatedAt())
+                .completedAt(task.getCompletedAt())
+                .userId(task.getUserId())
+                .isEvent(event != null)
+                .eventId(event != null ? event.getEventId() : null)
+                .build();
+    }
+
+    public List<TaskResponse> toTaskResponses(List<Task> tasks, Map<Long, Event> eventMap) {
+        return tasks.stream()
+                .map(task -> toTaskResponse(task, eventMap))
+                .collect(Collectors.toList());
+    }
+
+    public TaskResponse tupleToTaskResponse(Tuple tuple) {
+        Long taskId = tuple.get("taskId", Long.class);
+        Event event = eventRepository.findByTaskId(taskId).orElse(null);
+        return TaskResponse.builder()
+                .taskId(taskId)
                 .title(tuple.get("title", String.class))
                 .description(tuple.get("description", String.class))
                 .deadline(toOffsetDateTime(tuple.get("deadline")))
@@ -59,6 +88,8 @@ public class TaskMapper {
                 .createdAt(toOffsetDateTime(tuple.get("createdAt")))
                 .completedAt(toOffsetDateTime(tuple.get("completedAt")))
                 .userId(tuple.get("userId", Long.class))
+                .isEvent(event != null)
+                .eventId(event != null ? event.getEventId() : null)
                 .build();
     }
 

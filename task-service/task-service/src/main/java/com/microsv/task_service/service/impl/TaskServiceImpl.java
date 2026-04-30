@@ -38,6 +38,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
@@ -126,9 +127,13 @@ public class TaskServiceImpl implements TaskService {
     public List<TaskResponse> getAllTasksByUser(Long userId) {
         try {
             List<Task> tasks = taskRepository.findAllByUserId(userId);
-            return tasks.stream()
-                    .map(taskMapper::toTaskResponse)
-                    .collect(Collectors.toList());
+            if (tasks.isEmpty()) {
+                return List.of();
+            }
+            List<Long> taskIds = tasks.stream().map(Task::getTaskId).collect(Collectors.toList());
+            Map<Long, Event> eventMap = eventRepository.findByTaskIdIn(taskIds).stream()
+                    .collect(Collectors.toMap(Event::getTaskId, e -> e));
+            return taskMapper.toTaskResponses(tasks, eventMap);
         }catch (Exception e){
         throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
     }
@@ -138,9 +143,13 @@ public class TaskServiceImpl implements TaskService {
     public List<TaskResponse> getTasksByStatus(Long userId, TaskStatus status) {
         try {
             List<Task> tasks = taskRepository.findAllByUserIdAndStatus(userId, status);
-            return tasks.stream()
-                    .map(taskMapper::toTaskResponse)
-                    .collect(Collectors.toList());
+            if (tasks.isEmpty()) {
+                return List.of();
+            }
+            List<Long> taskIds = tasks.stream().map(Task::getTaskId).collect(Collectors.toList());
+            Map<Long, Event> eventMap = eventRepository.findByTaskIdIn(taskIds).stream()
+                    .collect(Collectors.toMap(Event::getTaskId, e -> e));
+            return taskMapper.toTaskResponses(tasks, eventMap);
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
         }
@@ -332,9 +341,13 @@ public class TaskServiceImpl implements TaskService {
                             task.getDeadline().isBefore(deadlineLimit))
                     .collect(Collectors.toList());
 
-            return tasks.stream()
-                    .map(taskMapper::toTaskResponse)
-                    .collect(Collectors.toList());
+            if (tasks.isEmpty()) {
+                return List.of();
+            }
+            List<Long> taskIds = tasks.stream().map(Task::getTaskId).collect(Collectors.toList());
+            Map<Long, Event> eventMap = eventRepository.findByTaskIdIn(taskIds).stream()
+                    .collect(Collectors.toMap(Event::getTaskId, e -> e));
+            return taskMapper.toTaskResponses(tasks, eventMap);
         }
         catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);
@@ -423,7 +436,13 @@ public class TaskServiceImpl implements TaskService {
         Pageable pageable = PageRequest.of(0, pageLimit);
 
         List<Task> tasks = taskRepository.findFilteredTasks(userId, statusStr, priorityStr, fromDateTime, toDateTime, pageable);
-        return tasks.stream().map(taskMapper::toTaskResponse).collect(Collectors.toList());
+        if (tasks.isEmpty()) {
+            return List.of();
+        }
+        List<Long> taskIds = tasks.stream().map(Task::getTaskId).collect(Collectors.toList());
+        Map<Long, Event> eventMap = eventRepository.findByTaskIdIn(taskIds).stream()
+                .collect(Collectors.toMap(Event::getTaskId, e -> e));
+        return taskMapper.toTaskResponses(tasks, eventMap);
     }
 
     @Override
