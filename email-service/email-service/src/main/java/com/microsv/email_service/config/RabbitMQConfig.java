@@ -14,8 +14,8 @@ public class RabbitMQConfig {
     public static final String EVENT_CREATION_QUEUE = "event-creation-queue";
     public static final String EVENT_REMINDER_QUEUE = "event-reminder-queue";
     public static final String EVENT_UPDATE_QUEUE = "event-update-queue";
-    
     public static final String EVENT_DELETE_QUEUE = "event-delete-queue";
+    public static final String TASK_NOTIFICATION_QUEUE = "task-notification-queue";
     
     @Bean
     public Queue eventCreationQueue() {
@@ -35,6 +35,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue eventDeleteQueue() {
         return new Queue(EVENT_DELETE_QUEUE, true);
+    }
+
+    @Bean
+    public Queue taskNotificationQueue() {
+        return new Queue(TASK_NOTIFICATION_QUEUE, true);
     }
     
     @Bean

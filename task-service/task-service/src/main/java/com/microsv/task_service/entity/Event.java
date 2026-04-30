@@ -40,7 +40,4 @@ public class Event {
     @Column(name = "reminder_minutes_before")
     @Builder.Default
     private Integer reminderMinutesBefore = 30;
-
-    @OneToOne(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Task task;
 }

@@ -1,7 +1,6 @@
 package com.microsv.task_service.controller;
 
 import com.microsv.task_service.dto.request.TaskCreationRequest;
-import com.microsv.task_service.dto.request.TaskDeleteRequest;
 import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.*;
 import com.microsv.task_service.entity.Task;
