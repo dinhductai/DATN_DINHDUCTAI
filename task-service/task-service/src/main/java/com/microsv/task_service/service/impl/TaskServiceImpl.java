@@ -161,11 +161,21 @@ public class TaskServiceImpl implements TaskService {
 
         OffsetDateTime oldCreatedAt = task.getCreatedAt();
         task.setDeadline(request.getDeadline());
+        if (request.getCreatedAt() != null) {
+            task.setCreatedAt(request.getCreatedAt());
+        }
+        if (request.getCompletedAt() != null) {
+            task.setCompletedAt(request.getCompletedAt());
+        }
         task.setPriority(request.getPriority());
         if (request.getStatus() != null) {
             task.setStatus(request.getStatus());
             if (request.getStatus() == TaskStatus.DONE) {
-                task.setCompletedAt(OffsetDateTime.now());
+                if (request.getCompletedAt() == null) {
+                    task.setCompletedAt(OffsetDateTime.now());
+                }
+            } else {
+                task.setCompletedAt(null);
             }
         }
         Task updatedTask = taskRepository.save(task);
