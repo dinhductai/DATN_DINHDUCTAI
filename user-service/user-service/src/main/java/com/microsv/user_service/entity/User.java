@@ -30,7 +30,7 @@ public class User {
     @Column(name = "email", nullable = false,unique = true, length = 100)
     private String email;
 
-    @Column(name = "profile")
+    @Column(name = "profile", length = 1000)
     private String profile;
 
     @CreationTimestamp
