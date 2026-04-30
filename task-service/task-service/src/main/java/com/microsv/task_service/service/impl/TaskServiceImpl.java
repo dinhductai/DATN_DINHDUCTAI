@@ -68,7 +68,7 @@ public class TaskServiceImpl implements TaskService {
                 Event savedEvent = eventRepository.save(eventMapper.toEvent(request.getEventCreationRequest(), savedTask.getTaskId()));
                 
                 // Lưu event reminder vào Redis để scheduler check
-                saveEventReminderToRedis(savedEvent, savedTask);
+                saveEventReminderToRedis(savedEvent, savedTask, request.getEventCreationRequest());
                 
                 // Gửi message để EmailService lưu invitedEmails
                 sendEventEmails(savedEvent, request.getEventCreationRequest());
@@ -84,7 +84,10 @@ public class TaskServiceImpl implements TaskService {
         }
     }
     
-    private void saveEventReminderToRedis(Event event, Task task) {
+    private void saveEventReminderToRedis(Event event, Task task, EventCreationRequest request) {
+        OffsetDateTime startTime = request.getStartTime();
+        Integer reminderMinutesBefore = event.getReminderMinutesBefore();
+        
         EventReminderData reminderData = EventReminderData.builder()
                 .eventId(event.getEventId())
                 .taskId(task.getTaskId())
@@ -92,8 +95,8 @@ public class TaskServiceImpl implements TaskService {
                 .linkEvent(event.getLinkEvent())
                 .location(event.getLocation())
                 .isOnline(event.getIsOnline())
-                .reminderMinutesBefore(event.getReminderMinutesBefore())
-                .startTime(task.getCreatedAt()) // createdAt = startTime (thời điểm bắt đầu)
+                .reminderMinutesBefore(reminderMinutesBefore)
+                .startTime(startTime)
                 .build();
         eventReminderRedisService.saveEventReminder(reminderData);
     }

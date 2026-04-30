@@ -3,6 +3,7 @@ package com.microsv.task_service.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Data
@@ -20,4 +21,6 @@ public class EventCreationRequest {
     private Integer reminderMinutesBefore;
     
     private List<String> invitedEmails;
+    
+    private OffsetDateTime startTime;
 }

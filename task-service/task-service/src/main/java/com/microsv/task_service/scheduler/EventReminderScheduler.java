@@ -76,6 +76,7 @@ public class EventReminderScheduler {
                     .location(reminderData.getLocation())
                     .isOnline(reminderData.getIsOnline())
                     .startTime(reminderData.getStartTime())
+                    .deadline(reminderData.getStartTime())
                     .build();
 
             eventEmailProducer.sendEventReminder(message);

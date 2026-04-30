@@ -21,4 +21,5 @@ public class EventReminderMessage implements Serializable {
     private String location;
     private Boolean isOnline;
     private OffsetDateTime startTime;
+    private OffsetDateTime deadline;
 }
