@@ -7,12 +7,15 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -29,14 +32,14 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher(
-                        "/api/users/register",
-                        "/internal/**",
-                        "/actuator/**"
-                )
+                .securityMatcher(new OrRequestMatcher(
+                        AntPathRequestMatcher.antMatcher("/api/users/register"),
+                        AntPathRequestMatcher.antMatcher("/internal/**"),
+                        AntPathRequestMatcher.antMatcher("/actuator/**")
+                ))
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().permitAll()
                 );
         return http.build();
@@ -48,11 +51,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/users/create").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.OPTIONS, "/**")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/users")).hasRole("ADMIN")
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/users/create")).hasRole("ADMIN")
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.DELETE, "/api/users/**")).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
