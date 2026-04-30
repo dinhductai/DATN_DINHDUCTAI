@@ -30,7 +30,8 @@ public class DailyTaskNotificationService {
     private final UserClient userClient;
     private final TaskNotificationProducer taskNotificationProducer;
     
-    @Scheduled(cron = "0 55 4 * * *", zone = "Asia/Ho_Chi_Minh")
+    // Push notifications disabled — uncomment @Scheduled to re-enable daily notifications
+    // @Scheduled(cron = "0 55 4 * * *", zone = "Asia/Ho_Chi_Minh")
     public void sendDailyTaskNotifications() {
         log.info("Starting daily task notification job - Testing at 11:30 AM Vietnam time");
         

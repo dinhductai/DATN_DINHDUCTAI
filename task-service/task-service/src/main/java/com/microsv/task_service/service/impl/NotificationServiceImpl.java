@@ -63,7 +63,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Scheduled(fixedRate = 30000)
+    // Push notifications disabled — uncomment @Scheduled to re-enable deadline checks
+    // @Scheduled(fixedRate = 30000)
     public void checkDeadlinesAndSendNotifications() {
         if (!pushServiceInitialized) {
             log.debug("PushService not initialized — skipping deadline check");

@@ -17,8 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Slf4j
-@RestController
-@RequestMapping("/api/notifications")
+// Push notifications disabled — uncomment @RestController to re-enable endpoints
+// @RestController
+// @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class NotificationController {
