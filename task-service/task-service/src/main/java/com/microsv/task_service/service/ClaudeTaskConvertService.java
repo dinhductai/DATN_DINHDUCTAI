@@ -6,9 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.microsv.task_service.entity.Task;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,21 +19,36 @@ public class ClaudeTaskConvertService {
     @Value("${claude.api.key}")
     private String claudeApiKey;
 
-    private final RestTemplate restTemplate;
+    @Value("${claude.api.ai-conversion-enabled:false}")
+    private boolean aiConversionEnabled;
+
     private final ObjectMapper objectMapper;
     private final TaskCacheService taskCacheService;
+    private final TaskJsonConvertService taskJsonConvertService;
 
     private static final String CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
 
-    public ClaudeTaskConvertService(TaskCacheService taskCacheService) {
-        this.restTemplate = new RestTemplate();
+    public ClaudeTaskConvertService(
+            TaskCacheService taskCacheService,
+            TaskJsonConvertService taskJsonConvertService) {
+        this.taskCacheService = taskCacheService;
+        this.taskJsonConvertService = taskJsonConvertService;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        this.taskCacheService = taskCacheService;
     }
 
+    /**
+     * Convert tasks to AI-chatbot-friendly JSON.
+     * Uses local Java conversion by default (free, fast).
+     * Falls back to Claude AI only when claude.api.ai-conversion-enabled = true.
+     */
     public String convertTasksToJson(Long userId, List<Task> tasks) {
+        if (!aiConversionEnabled) {
+            log.debug("AI conversion disabled — using local TaskJsonConvertService for user {}", userId);
+            return taskJsonConvertService.convertTasksToJson(tasks);
+        }
+
         try {
             String taskData = objectMapper.writeValueAsString(tasks);
 
@@ -60,7 +73,7 @@ public class ClaudeTaskConvertService {
 
         } catch (Exception e) {
             log.error("Failed to convert tasks to JSON for user {}: {}", userId, e.getMessage());
-            return generateFallbackJson(tasks);
+            return taskJsonConvertService.convertTasksToJson(tasks);
         }
     }
 
@@ -71,7 +84,6 @@ public class ClaudeTaskConvertService {
         log.info("Synced {} tasks for user {} to Redis", tasks.size(), userId);
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, Object> callClaudeApi(String prompt) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "claude-sonnet-4-20250514");
@@ -83,18 +95,19 @@ public class ClaudeTaskConvertService {
         message.put("content", prompt);
         requestBody.put("messages", List.of(message));
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         headers.set("x-api-key", claudeApiKey);
         headers.set("anthropic-version", "2023-06-01");
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+        org.springframework.http.HttpEntity<Map<String, Object>> entity =
+                new org.springframework.http.HttpEntity<>(requestBody, headers);
 
         log.info("Calling Claude API with key: {}", claudeApiKey.substring(0, 10) + "...");
 
-        ResponseEntity<Map> response = restTemplate.exchange(
+        org.springframework.http.ResponseEntity<Map> response = new org.springframework.web.client.RestTemplate().exchange(
                 CLAUDE_API_URL,
-                HttpMethod.POST,
+                org.springframework.http.HttpMethod.POST,
                 entity,
                 Map.class
         );
@@ -116,16 +129,5 @@ public class ClaudeTaskConvertService {
             log.warn("Failed to parse Claude response: {}", e.getMessage());
         }
         return "{}";
-    }
-
-    private String generateFallbackJson(List<Task> tasks) {
-        try {
-            Map<String, Object> fallback = new HashMap<>();
-            fallback.put("totalTasks", tasks.size());
-            fallback.put("tasks", tasks);
-            return objectMapper.writeValueAsString(fallback);
-        } catch (Exception e) {
-            return "{\"error\": \"Failed to convert tasks\"}";
-        }
     }
 }

@@ -57,3 +57,6 @@ spring.data.redis:
 claude:
   api:
     key: ${CLAUDE_API_KEY:}
+    # Set to true to use Claude AI for task JSON conversion (incurs API cost).
+    # Set to false to use local Java conversion (free, faster).
+    ai-conversion-enabled: false
