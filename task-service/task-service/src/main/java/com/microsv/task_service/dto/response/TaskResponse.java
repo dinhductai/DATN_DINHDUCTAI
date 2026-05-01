@@ -21,6 +21,7 @@ public class TaskResponse {
     private OffsetDateTime deadline;
     private TaskStatus status;
     private PriorityLevel priority;
+    private OffsetDateTime startTime;
     private OffsetDateTime createdAt;
     private OffsetDateTime completedAt;
     private Long userId;

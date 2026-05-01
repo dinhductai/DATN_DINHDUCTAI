@@ -122,10 +122,10 @@ public class TaskJsonConvertService {
             entry.put("deadlineInfo", "Không có hạn chót");
         }
 
-        // CreatedAt
-        if (task.getCreatedAt() != null) {
-            entry.put("createdAt", task.getCreatedAt().format(DEADLINE_FORMATTER));
-            entry.put("createdAtRaw", task.getCreatedAt().toString());
+        // CreatedAt (BE field: startTime — renamed from createdAt)
+        if (task.getStartTime() != null) {
+            entry.put("createdAt", task.getStartTime().format(DEADLINE_FORMATTER));
+            entry.put("createdAtRaw", task.getStartTime().toString());
         } else {
             entry.put("createdAt", null);
             entry.put("createdAtRaw", null);

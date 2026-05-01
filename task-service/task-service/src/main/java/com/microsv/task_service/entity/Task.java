@@ -41,9 +41,8 @@ public class Task {
     @Column(nullable = false)
     private PriorityLevel priority;
 
-//    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private OffsetDateTime createdAt;  //đây chính là starttime công việc
+    @Column(name = "start_time")
+    private OffsetDateTime startTime;  //thời gian bắt đầu task (đổi tên từ created_at, giữ nguyên data cũ)
 
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;

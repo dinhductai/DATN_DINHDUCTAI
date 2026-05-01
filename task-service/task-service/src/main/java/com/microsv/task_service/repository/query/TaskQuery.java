@@ -4,7 +4,7 @@ public class TaskQuery {
     public static final String GET_TASKS_IN_TODAY =
             "SELECT t.task_id AS taskId, t.title AS title, t.description AS description, " +
                     "t.deadline AS deadline, t.status AS status, t.priority AS priority, " +
-                    "t.created_at AS createdAt, t.completed_at AS completedAt, t.user_id AS userId " +
+                    "t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
                     "FROM tasks t " +
                     "WHERE t.user_id = :userId " +
                     "AND t.deadline IS NOT NULL " +
@@ -15,7 +15,7 @@ public class TaskQuery {
     public static final String GET_OVERDUE_TASK_TODAY =
             "SELECT t.task_id AS taskId, t.title AS title, t.description AS description, " +
                     "t.deadline AS deadline, t.status AS status, t.priority AS priority, " +
-                    "t.created_at AS createdAt, t.completed_at AS completedAt, t.user_id AS userId " +
+                    "t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
                     "FROM tasks t " +
                     "WHERE t.user_id = :userId " +
                     "AND t.deadline IS NOT NULL " +
@@ -27,7 +27,7 @@ public class TaskQuery {
     public static final String GET_COMPLETED_TASK_TODAY =
             "SELECT t.task_id AS taskId, t.title AS title, t.description AS description, " +
                     "t.deadline AS deadline, t.status AS status, t.priority AS priority, " +
-                    "t.created_at AS createdAt, t.completed_at AS completedAt, t.user_id AS userId " +
+                    "t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
                     "FROM tasks t " +
                     "WHERE t.user_id = :userId " +
                     "AND t.completed_at IS NOT NULL " +
@@ -57,7 +57,7 @@ public class TaskQuery {
                     "),\n" +
                     "busy_hours AS (\n" +
                     "    SELECT COALESCE(SUM(\n" +
-                    "        EXTRACT(EPOCH FROM (COALESCE(t.completed_at, t.deadline) - t.created_at)) / 3600.0\n" +
+                    "        EXTRACT(EPOCH FROM (COALESCE(t.completed_at, t.deadline) - t.start_time)) / 3600.0\n" +
                     "    ), 0) AS used_hours\n" +
                     "    FROM tasks t\n" +
                     "    CROSS JOIN week_bounds w\n" +
@@ -100,7 +100,7 @@ public class TaskQuery {
                     "    FROM days d\n" +
                     "    LEFT JOIN tasks t \n" +
                     "        ON t.user_id = :userId\n" +
-                    "        AND t.created_at::date = d.day_date\n" +
+                    "        AND t.start_time::date = d.day_date\n" +
                     "    GROUP BY d.day_date\n" +
                     "    ORDER BY d.day_date;";
 
@@ -115,11 +115,11 @@ public class TaskQuery {
                     "), \n" +
                     "task_weeks AS (\n" +
                     "    SELECT \n" +
-                    "        DATE_TRUNC('week', created_at) AS week_start,\n" +
+                    "        DATE_TRUNC('week', start_time) AS week_start,\n" +
                     "        COUNT(*) AS task_count\n" +
                     "    FROM tasks\n" +
                     "    WHERE user_id = :userId\n" +
-                    "    GROUP BY DATE_TRUNC('week', created_at)\n" +
+                    "    GROUP BY DATE_TRUNC('week', start_time)\n" +
                     ")\n" +
                     "SELECT \n" +
                     "    TO_CHAR(ws.week_start, 'YYYY-\"W\"IW') AS week_label,\n" +
@@ -130,11 +130,11 @@ public class TaskQuery {
 
     public static final String COUNT_ACTIVE_USERS_THIS_WEEK =
             "SELECT COUNT(DISTINCT t.user_id) FROM tasks t " +
-                    "WHERE DATE_TRUNC('week', t.created_at) = DATE_TRUNC('week', CURRENT_DATE)";
+                    "WHERE DATE_TRUNC('week', t.start_time) = DATE_TRUNC('week', CURRENT_DATE)";
 
     public static final String COUNT_TASKS_CREATED_THIS_WEEK =
             "SELECT COUNT(*) FROM tasks t " +
-                    "WHERE DATE_TRUNC('week', t.created_at) = DATE_TRUNC('week', CURRENT_DATE)";
+                    "WHERE DATE_TRUNC('week', t.start_time) = DATE_TRUNC('week', CURRENT_DATE)";
 
     public static final String GET_COMPLETED_TASKS_BY_DAY_THIS_WEEK =
             "WITH days AS (\n" +

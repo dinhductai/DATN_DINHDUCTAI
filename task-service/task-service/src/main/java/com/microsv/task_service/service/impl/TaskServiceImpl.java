@@ -168,10 +168,10 @@ public class TaskServiceImpl implements TaskService {
 
 //        DateUtil.ValidateDeadline(request.getDeadline());
 
-        OffsetDateTime oldCreatedAt = task.getCreatedAt();
+        OffsetDateTime oldStartTime = task.getStartTime();
         task.setDeadline(request.getDeadline());
-        if (request.getCreatedAt() != null) {
-            task.setCreatedAt(request.getCreatedAt());
+        if (request.getStartTime() != null) {
+            task.setStartTime(request.getStartTime());
         }
         if (request.getCompletedAt() != null) {
             task.setCompletedAt(request.getCompletedAt());
@@ -193,7 +193,7 @@ public class TaskServiceImpl implements TaskService {
         
         // Xử lý update event nếu có
         if (request.getEventId() != null && request.getEventUpdateRequest() != null) {
-            handleEventUpdate(task, request.getEventId(), request.getEventUpdateRequest(), oldCreatedAt);
+            handleEventUpdate(task, request.getEventId(), request.getEventUpdateRequest(), oldStartTime);
         }
         
         return response;
@@ -202,7 +202,7 @@ public class TaskServiceImpl implements TaskService {
         }
     }
     
-    private void handleEventUpdate(Task task, Long eventId, EventUpdateRequest eventUpdateRequest, OffsetDateTime oldCreatedAt) {
+    private void handleEventUpdate(Task task, Long eventId, EventUpdateRequest eventUpdateRequest, OffsetDateTime oldStartTime) {
         eventRepository.findByEventId(eventId).ifPresent(event -> {
             boolean reminderChanged = false;
             
@@ -228,8 +228,8 @@ public class TaskServiceImpl implements TaskService {
             
             eventRepository.save(event);
             
-            // Kiểm tra thay đổi createdAt (startTime)
-            if (oldCreatedAt != null && task.getCreatedAt() != null && !oldCreatedAt.equals(task.getCreatedAt())) {
+            // Kiểm tra thay đổi startTime
+            if (oldStartTime != null && task.getStartTime() != null && !oldStartTime.equals(task.getStartTime())) {
                 reminderChanged = true;
             }
             
@@ -243,7 +243,7 @@ public class TaskServiceImpl implements TaskService {
                         .location(event.getLocation())
                         .isOnline(event.getIsOnline())
                         .reminderMinutesBefore(event.getReminderMinutesBefore())
-                        .startTime(task.getCreatedAt())
+                        .startTime(task.getStartTime())
                         .build();
                 eventReminderRedisService.updateEventReminder(reminderData);
                 log.info("Updated event reminder in Redis for eventId: {}", event.getEventId());

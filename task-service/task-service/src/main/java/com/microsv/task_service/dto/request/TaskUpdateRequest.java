@@ -15,7 +15,7 @@ public class TaskUpdateRequest {
     private String title;
     private String description;
     private OffsetDateTime deadline;
-    private OffsetDateTime createdAt;
+    private OffsetDateTime startTime;
     private OffsetDateTime completedAt;
     private PriorityLevel priority;
     private TaskStatus status;
