@@ -1,52 +1,64 @@
 package com.microsv.task_service.controller;
 
-import com.microsv.task_service.dto.request.SubscriptionRequest;
-import com.microsv.task_service.entity.PushSubscription;
+import com.microsv.task_service.dto.response.NotificationResponse;
 import com.microsv.task_service.service.NotificationService;
-import com.microsv.task_service.service.DailyTaskNotificationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
-// Push notifications disabled — uncomment @RestController to re-enable endpoints
-// @RestController
-// @RequestMapping("/api/notifications")
+@RestController
+@RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class NotificationController {
 
     private final NotificationService notificationService;
-    private final DailyTaskNotificationService dailyTaskNotificationService;
 
-
-    @PostMapping("/subscribe")
-    public ResponseEntity<Void> subscribe(@RequestBody SubscriptionRequest request, @AuthenticationPrincipal Jwt jwt) {
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getAllNotifications(@AuthenticationPrincipal Jwt jwt) {
         Long userId = Long.parseLong(jwt.getSubject());
-        notificationService.subscribe(request, userId);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        List<NotificationResponse> notifications = notificationService.getAllNotifications(userId);
+        Long unreadCount = notificationService.getUnreadCount(userId);
+        return ResponseEntity.ok(Map.of(
+                "notifications", notifications,
+                "unreadCount", unreadCount
+        ));
     }
 
-    @PostMapping("/trigger-daily")
-    public ResponseEntity<String> triggerDailyNotification() {
-        log.info("Manually triggering daily task notification");
-        dailyTaskNotificationService.sendDailyTaskNotifications();
-        return ResponseEntity.ok("Daily task notification triggered successfully");
+    @GetMapping("/unread")
+    public ResponseEntity<List<NotificationResponse>> getUnreadNotifications(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        return ResponseEntity.ok(notificationService.getUnreadNotifications(userId));
     }
 
-//    @DeleteMapping("/unsubscribe")
-//    public ResponseEntity<Void> unsubscribe(@AuthenticationPrincipal Jwt jwt) {
-//        Long userId = Long.parseLong(jwt.getSubject());
-//        notificationService.unsubscribe(userId);
-//        log.info("User {} unsubscribed from push notifications", userId);
-//        return new ResponseEntity<>(HttpStatus.OK);
-//    }
+    @GetMapping("/unread/count")
+    public ResponseEntity<Map<String, Long>> getUnreadCount(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        return ResponseEntity.ok(Map.of("count", notificationService.getUnreadCount(userId)));
+    }
+
+    @PatchMapping("/{notificationId}/read")
+    public ResponseEntity<Void> markAsRead(
+            @PathVariable Long notificationId,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        notificationService.markAsRead(notificationId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markAllAsRead(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok().build();
+    }
 }

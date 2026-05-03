@@ -1,11 +1,13 @@
 package com.microsv.task_service.service;
 
-import com.microsv.task_service.dto.request.SubscriptionRequest;
-import com.microsv.task_service.entity.PushSubscription;
+import com.microsv.task_service.dto.response.NotificationResponse;
+
+import java.util.List;
 
 public interface NotificationService {
-    void checkDeadlinesAndSendNotifications();
-    void sendNotification(PushSubscription subscription, String payload);
-    void subscribe(SubscriptionRequest request, Long userId);
-//    void unsubscribe( Long userId);
+    List<NotificationResponse> getAllNotifications(Long userId);
+    List<NotificationResponse> getUnreadNotifications(Long userId);
+    Long getUnreadCount(Long userId);
+    void markAsRead(Long notificationId, Long userId);
+    void markAllAsRead(Long userId);
 }

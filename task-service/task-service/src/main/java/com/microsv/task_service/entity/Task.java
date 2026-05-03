@@ -3,11 +3,13 @@ import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
@@ -49,4 +51,8 @@ public class Task {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @OneToOne(mappedBy = "task", fetch = FetchType.LAZY, orphanRemoval = false)
+    @JsonIgnore
+    private Notification notification;
 }

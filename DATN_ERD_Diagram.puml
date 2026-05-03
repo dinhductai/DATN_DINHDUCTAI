@@ -1,0 +1,173 @@
+@startuml DATN_ERD_Diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam linetype ortho
+
+' ===============================================
+' DATN MICROSERVICES - ENTITY RELATIONSHIP DIAGRAM
+' ===============================================
+
+' --------------- auth-service ----------------
+
+package "auth_service" {
+
+    entity "invalidated_token" as itoken {
+        * **id**: VARCHAR (PK)
+        --
+        * token: VARCHAR
+        * expiry_time: TIMESTAMP
+    }
+}
+
+' --------------- user-service ----------------
+
+package "user_service" {
+
+    entity "users" as users {
+        * **user_id**: BIGINT (PK)
+        --
+        * userName: VARCHAR(50)
+        * password: VARCHAR(255)
+        * email: VARCHAR(100) UNIQUE
+        * profile: VARCHAR(1000)
+        * created_at: TIMESTAMP
+    }
+
+    entity "roles" as roles {
+        * **role_id**: BIGINT (PK)
+        --
+        * role_name: VARCHAR (ENUM)
+    }
+
+    entity "permissions" as permissions {
+        * **permission_id**: BIGINT (PK)
+        --
+        * permission_name: VARCHAR(100) UNIQUE
+    }
+
+    entity "users_roles" as users_roles <<join-table>> {
+        * **user_id**: BIGINT (FK)
+        * **role_id**: BIGINT (FK)
+    }
+
+    entity "roles_permissions" as roles_permissions <<join-table>> {
+        * **role_id**: BIGINT (FK)
+        * **permission_id**: BIGINT (FK)
+    }
+}
+
+' --------------- task-service ----------------
+
+package "task_service" {
+
+    entity "tasks" as tasks {
+        * **task_id**: BIGINT (PK)
+        --
+        * title: VARCHAR
+        * description: TEXT
+        * deadline: TIMESTAMPTZ
+        * status: VARCHAR (TODO, IN_PROGRESS, DONE)
+        * priority: VARCHAR (HIGH, MEDIUM, LOW)
+        * start_time: TIMESTAMPTZ
+        * completed_at: TIMESTAMPTZ
+        * user_id: BIGINT (FK)
+    }
+
+    entity "notifications" as notifications {
+        * **notification_id**: BIGINT (PK)
+        --
+        * user_id: BIGINT (FK)
+        * task_id: BIGINT UNIQUE (FK)
+        * title: VARCHAR
+        * content: TEXT
+        * is_read: BOOLEAN DEFAULT FALSE
+        * created_at: TIMESTAMP
+    }
+
+    entity "events" as events {
+        * **event_id**: BIGINT (PK)
+        --
+        * task_id: BIGINT UNIQUE (FK)
+        * event_description: TEXT
+        * link_event: VARCHAR(500)
+        * location: VARCHAR(500)
+        * is_online: BOOLEAN DEFAULT FALSE
+        * reminder_minutes_before: INT DEFAULT 30
+    }
+}
+
+' --------------- ai-service ----------------
+
+package "ai_service" {
+
+    entity "conversation_memory" as conv_memory {
+        * **chat_id**: BIGINT (PK)
+        --
+        * user_id: BIGINT
+        * conversation_id: VARCHAR
+        * role: VARCHAR
+        * content: VARCHAR(3000)
+        * create_at: TIMESTAMP
+    }
+}
+
+' --------------- email-service ----------------
+
+package "email_service" {
+
+    entity "emails" as emails {
+        * **id**: BIGINT (PK)
+        --
+        * user_id: BIGINT
+        * to_email: VARCHAR
+        * subject: VARCHAR
+        * body: TEXT
+        * status: VARCHAR
+        * error_message: TEXT
+        * created_at: TIMESTAMP
+        * sent_at: TIMESTAMP
+    }
+
+    entity "event_invitations" as event_invitations {
+        * **id**: BIGINT (PK)
+        --
+        * event_id: BIGINT (FK)
+        * invited_email: VARCHAR
+        * status: VARCHAR (PENDING, SENT, FAILED)
+        * sent_at: TIMESTAMP
+    }
+}
+
+
+' --------------- RELATIONSHIPS ----------------
+
+' Users - Roles (Many-to-Many)
+users ||--o{ users_roles
+roles ||--o{ users_roles
+
+' Roles - Permissions (Many-to-Many)
+roles ||--o{ roles_permissions
+permissions ||--o{ roles_permissions
+
+' Users - Tasks (One-to-Many)
+users ||--o{ tasks
+
+' Tasks - Notifications (One-to-One)
+tasks ||--|| notifications
+
+' Tasks - Events (One-to-One)
+tasks ||--|| events
+
+' Events - Event Invitations (One-to-Many)
+events ||--o{ event_invitations
+
+' Users - Notifications (One-to-Many)
+users ||--o{ notifications
+
+' Users - Conversation Memory (One-to-Many)
+users ||--o{ conv_memory
+
+' Users - Emails (One-to-Many)
+users ||--o{ emails
+
+@enduml

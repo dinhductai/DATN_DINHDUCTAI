@@ -83,6 +83,7 @@ public enum ErrorCode {
     RESOURCE_NOT_OWNED(4010, "You do not own this resource", HttpStatus.FORBIDDEN),
     LIMIT_EXCEEDED(4011, "Operation limit exceeded", HttpStatus.TOO_MANY_REQUESTS),
     TASK_ALREADY_COMPLETED(4012, "Task already completed", HttpStatus.CONFLICT),
+    NOTIFICATION_NOT_FOUND(4013, "Notification not found", HttpStatus.NOT_FOUND),
 
 
     //5000-5999: lỗi tích hợp dịch vụ bên ngoài, mạng ,...
