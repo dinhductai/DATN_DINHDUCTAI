@@ -12,7 +12,7 @@ skinparam linetype ortho
 package "auth_service" {
 
     entity "invalidated_token" as itoken {
-        * **id**: VARCHAR (PK)
+        * **id**: VARCHAR
         --
         * token: VARCHAR
         * expiry_time: TIMESTAMP
@@ -24,35 +24,35 @@ package "auth_service" {
 package "user_service" {
 
     entity "users" as users {
-        * **user_id**: BIGINT (PK)
+        * **user_id**: BIGINT
         --
-        * userName: VARCHAR(50)
-        * password: VARCHAR(255)
-        * email: VARCHAR(100) UNIQUE
-        * profile: VARCHAR(1000)
-        * created_at: TIMESTAMP
+        * userName: VARCHAR
+        * password: VARCHAR
+        * email: VARCHAR
+        * profile: VARCHAR
+        * created_at: TIMESTAMPTZ
     }
 
     entity "roles" as roles {
-        * **role_id**: BIGINT (PK)
+        * **role_id**: BIGINT
         --
-        * role_name: VARCHAR (ENUM)
+        * role_name: VARCHAR
     }
 
     entity "permissions" as permissions {
-        * **permission_id**: BIGINT (PK)
+        * **permission_id**: BIGINT
         --
-        * permission_name: VARCHAR(100) UNIQUE
+        * permission_name: VARCHAR
     }
 
     entity "users_roles" as users_roles <<join-table>> {
-        * **user_id**: BIGINT (FK)
-        * **role_id**: BIGINT (FK)
+        * **user_id**: BIGINT
+        * **role_id**: BIGINT
     }
 
     entity "roles_permissions" as roles_permissions <<join-table>> {
-        * **role_id**: BIGINT (FK)
-        * **permission_id**: BIGINT (FK)
+        * **role_id**: BIGINT
+        * **permission_id**: BIGINT
     }
 }
 
@@ -61,38 +61,39 @@ package "user_service" {
 package "task_service" {
 
     entity "tasks" as tasks {
-        * **task_id**: BIGINT (PK)
+        * **task_id**: BIGINT
         --
         * title: VARCHAR
         * description: TEXT
         * deadline: TIMESTAMPTZ
-        * status: VARCHAR (TODO, IN_PROGRESS, DONE)
-        * priority: VARCHAR (HIGH, MEDIUM, LOW)
+        * status: VARCHAR
+        * priority: VARCHAR
         * start_time: TIMESTAMPTZ
         * completed_at: TIMESTAMPTZ
-        * user_id: BIGINT (FK)
+        * user_id: BIGINT
+        * created_at: TIMESTAMPTZ
     }
 
     entity "notifications" as notifications {
-        * **notification_id**: BIGINT (PK)
+        * **notification_id**: BIGINT
         --
-        * user_id: BIGINT (FK)
-        * task_id: BIGINT UNIQUE (FK)
+        * user_id: BIGINT
+        * task_id: BIGINT
         * title: VARCHAR
         * content: TEXT
-        * is_read: BOOLEAN DEFAULT FALSE
-        * created_at: TIMESTAMP
+        * is_read: BOOLEAN
+        * created_at: TIMESTAMPTZ
     }
 
     entity "events" as events {
-        * **event_id**: BIGINT (PK)
+        * **event_id**: BIGINT
         --
-        * task_id: BIGINT UNIQUE (FK)
+        * task_id: BIGINT
         * event_description: TEXT
-        * link_event: VARCHAR(500)
-        * location: VARCHAR(500)
-        * is_online: BOOLEAN DEFAULT FALSE
-        * reminder_minutes_before: INT DEFAULT 30
+        * link_event: VARCHAR
+        * location: VARCHAR
+        * is_online: BOOLEAN
+        * reminder_minutes_before: INT
     }
 }
 
@@ -101,13 +102,13 @@ package "task_service" {
 package "ai_service" {
 
     entity "conversation_memory" as conv_memory {
-        * **chat_id**: BIGINT (PK)
+        * **chat_id**: BIGINT
         --
         * user_id: BIGINT
         * conversation_id: VARCHAR
         * role: VARCHAR
-        * content: VARCHAR(3000)
-        * create_at: TIMESTAMP
+        * content: VARCHAR
+        * create_at: TIMESTAMPTZ
     }
 }
 
@@ -116,7 +117,7 @@ package "ai_service" {
 package "email_service" {
 
     entity "emails" as emails {
-        * **id**: BIGINT (PK)
+        * **id**: BIGINT
         --
         * user_id: BIGINT
         * to_email: VARCHAR
@@ -124,50 +125,42 @@ package "email_service" {
         * body: TEXT
         * status: VARCHAR
         * error_message: TEXT
-        * created_at: TIMESTAMP
-        * sent_at: TIMESTAMP
+        * created_at: TIMESTAMPTZ
+        * sent_at: TIMESTAMPTZ
     }
 
     entity "event_invitations" as event_invitations {
-        * **id**: BIGINT (PK)
+        * **id**: BIGINT
         --
-        * event_id: BIGINT (FK)
+        * event_id: BIGINT
         * invited_email: VARCHAR
-        * status: VARCHAR (PENDING, SENT, FAILED)
-        * sent_at: TIMESTAMP
+        * status: VARCHAR
+        * sent_at: TIMESTAMPTZ
     }
 }
 
 
 ' --------------- RELATIONSHIPS ----------------
 
-' Users - Roles (Many-to-Many)
+' Within each service (solid line = real FK)
 users ||--o{ users_roles
 roles ||--o{ users_roles
-
-' Roles - Permissions (Many-to-Many)
 roles ||--o{ roles_permissions
 permissions ||--o{ roles_permissions
-
-' Users - Tasks (One-to-Many)
-users ||--o{ tasks
-
-' Tasks - Notifications (One-to-One)
 tasks ||--|| notifications
-
-' Tasks - Events (One-to-One)
 tasks ||--|| events
 
-' Events - Event Invitations (One-to-Many)
-events ||--o{ event_invitations
+' Cross-service (dashed line = denormalized reference, no FK constraint)
+users .. tasks
+users .. notifications
+users .. conv_memory
+users .. emails
+events .. event_invitations
 
-' Users - Notifications (One-to-Many)
-users ||--o{ notifications
-
-' Users - Conversation Memory (One-to-Many)
-users ||--o{ conv_memory
-
-' Users - Emails (One-to-Many)
-users ||--o{ emails
+legend left
+|= LOẠI ĐƯỜNG |= Ý NGHĨA |
+|= **————** | Quan hệ ràng buộc giữa các bảng trong cùng 1 service |
+|= **- - - - -** | Quan hệ mức logic, chỉ lưu ID để làm tham chiếu, không có quan hệ ràng buộc |
+endlegend
 
 @enduml
