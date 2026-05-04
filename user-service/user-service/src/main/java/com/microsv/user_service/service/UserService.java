@@ -11,7 +11,7 @@ import com.microsv.user_service.entity.User;
 import java.util.List;
 
 public interface UserService {
-    List<User> getAllUsers();
+    List<UserResponse> getAllUsers();
     User getUserById(Long id);
     User createUser(User user);
     UserResponse createUser(UserCreationRequest request);
@@ -21,6 +21,6 @@ public interface UserService {
     UserAuthResponse getUserByEmail(String email);
     String getUserEmailById(Long userId);
     long countUser();
-    List<User> searchUserName(String name);
+    List<UserResponse> searchUserName(String name);
     Long countUserRegisterThisWeek();
 }

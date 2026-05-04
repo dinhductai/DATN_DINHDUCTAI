@@ -42,6 +42,7 @@ public class UserMapper {
                 .userName(user.getUserName())
                 .email(user.getEmail())
                 .profile(user.getProfile())
+                .createdAt(user.getCreatedAt())
                 .roles(user.getRoles().stream()
                         .map(role -> role.getRoleName().name())
                         .collect(Collectors.toSet()))

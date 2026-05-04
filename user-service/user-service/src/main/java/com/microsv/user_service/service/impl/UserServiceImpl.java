@@ -43,12 +43,15 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public List<User> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
         if (users.isEmpty()) {
             throw new BaseException(ErrorCode.USER_NOT_FOUND);
         }
-        return users;
+        return users.stream()
+                .filter(u -> !u.getEmail().equalsIgnoreCase("admin@gmail.com"))
+                .map(userMapper::toUserResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -164,8 +167,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> searchUserName(String name) {
-        return userRepository.searchUsersByUserName(name);
+    public List<UserResponse> searchUserName(String name) {
+        List<User> users = userRepository.searchUsersByUserName(name);
+        return users.stream()
+                .filter(u -> !u.getEmail().equalsIgnoreCase("admin@gmail.com"))
+                .map(userMapper::toUserResponse)
+                .collect(Collectors.toList());
     }
 
     @Override

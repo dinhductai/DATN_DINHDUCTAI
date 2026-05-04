@@ -56,9 +56,9 @@ public class UserController {
 //    }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         // Lưu ý: Cần thêm logic getAllUsers() trong service
-        List<User> users = userService.getAllUsers();
+        List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
@@ -84,9 +84,9 @@ public class UserController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<User>> searchUsers(
+    public ResponseEntity<List<UserResponse>> searchUsers(
             @RequestParam("keyword") String keyword) {
-        List<User> users = userService.searchUserName(keyword);
+        List<UserResponse> users = userService.searchUserName(keyword);
         return ResponseEntity.ok(users);
     }
 

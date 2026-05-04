@@ -194,4 +194,45 @@ public class TaskController {
     public ResponseEntity<List<Task>> getTasks(@RequestParam String title) {
         return ResponseEntity.ok(taskService.findTaskByTitle(title));
     }
+
+    // ============ EVENT STATISTICS ============
+
+    @GetMapping("/events/statistics/year")
+    public ResponseEntity<?> getEventStatisticsYear(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        Long total = taskService.countEventsInCurrentYear();
+        Long personal = taskService.countPersonalEventsInCurrentYear();
+        Long group = taskService.countGroupEventsInCurrentYear();
+        List<EventResponse> byPriority = taskService.countEventsByPriorityInCurrentYear();
+        return ResponseEntity.ok(java.util.Map.of(
+                "totalEvents", total,
+                "personalEvents", personal,
+                "groupEvents", group,
+                "eventsByPriority", byPriority
+        ));
+    }
+
+    @GetMapping("/events/upcoming")
+    public ResponseEntity<List<EventResponse>> getUpcomingEvents(
+            @RequestParam(required = false, defaultValue = "10") Integer limit,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        return ResponseEntity.ok(taskService.getUpcomingEvents(userId, limit));
+    }
+
+    @GetMapping("/events")
+    public ResponseEntity<List<EventResponse>> getAllEvents(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        return ResponseEntity.ok(taskService.getAllEventsByUser(userId));
+    }
+
+    @DeleteMapping("/events/{taskId}")
+    public ResponseEntity<Void> deleteEvent(
+            @PathVariable Long taskId,
+            @RequestParam Long eventId,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        taskService.deleteEvent(taskId, eventId, userId);
+        return ResponseEntity.noContent().build();
+    }
 }

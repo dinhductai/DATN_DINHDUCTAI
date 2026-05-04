@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "events", indexes = {
@@ -40,4 +42,7 @@ public class Event {
     @Column(name = "reminder_minutes_before")
     @Builder.Default
     private Integer reminderMinutesBefore = 30;
+
+    @Column(name = "invited_emails", columnDefinition = "TEXT")
+    private String invitedEmails; // JSON array stored as text
 }

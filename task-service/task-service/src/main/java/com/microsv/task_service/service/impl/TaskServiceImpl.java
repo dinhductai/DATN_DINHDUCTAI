@@ -1,5 +1,8 @@
 package com.microsv.task_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsv.common.enumeration.ErrorCode;
 import com.microsv.common.exception.BaseException;
 import com.microsv.task_service.dto.message.EventCreationMessage;
@@ -57,6 +60,7 @@ public class TaskServiceImpl implements TaskService {
     TaskCacheService taskCacheService;
     ClaudeTaskConvertService claudeTaskConvertService;
     EventReminderRedisService eventReminderRedisService;
+    ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     @Transactional
@@ -205,34 +209,20 @@ public class TaskServiceImpl implements TaskService {
     private void handleEventUpdate(Task task, Long eventId, EventUpdateRequest eventUpdateRequest, OffsetDateTime oldStartTime) {
         eventRepository.findByEventId(eventId).ifPresent(event -> {
             boolean reminderChanged = false;
-            
-            // Cập nhật các trường event
-            if (eventUpdateRequest.getEventDescription() != null) {
-                event.setEventDescription(eventUpdateRequest.getEventDescription());
-            }
-            if (eventUpdateRequest.getLinkEvent() != null) {
-                event.setLinkEvent(eventUpdateRequest.getLinkEvent());
-            }
-            if (eventUpdateRequest.getLocation() != null) {
-                event.setLocation(eventUpdateRequest.getLocation());
-            }
-            if (eventUpdateRequest.getIsOnline() != null) {
-                event.setIsOnline(eventUpdateRequest.getIsOnline());
-            }
+
+            eventMapper.updateEvent(event, eventUpdateRequest);
+
+            // Kiểm tra thay đổi reminder
             if (eventUpdateRequest.getReminderMinutesBefore() != null) {
-                if (!eventUpdateRequest.getReminderMinutesBefore().equals(event.getReminderMinutesBefore())) {
-                    reminderChanged = true;
-                    event.setReminderMinutesBefore(eventUpdateRequest.getReminderMinutesBefore());
-                }
+                reminderChanged = true;
             }
-            
-            eventRepository.save(event);
-            
             // Kiểm tra thay đổi startTime
             if (oldStartTime != null && task.getStartTime() != null && !oldStartTime.equals(task.getStartTime())) {
                 reminderChanged = true;
             }
-            
+
+            eventRepository.save(event);
+
             // Nếu có thay đổi về reminder → tính lại ZSET
             if (reminderChanged) {
                 EventReminderData reminderData = EventReminderData.builder()
@@ -248,7 +238,7 @@ public class TaskServiceImpl implements TaskService {
                 eventReminderRedisService.updateEventReminder(reminderData);
                 log.info("Updated event reminder in Redis for eventId: {}", event.getEventId());
             }
-            
+
             // Nếu có invitedEmails mới → gửi message cập nhật email service
             if (eventUpdateRequest.getInvitedEmails() != null) {
                 EventUpdateMessage updateMessage = EventUpdateMessage.builder()
@@ -256,7 +246,7 @@ public class TaskServiceImpl implements TaskService {
                         .invitedEmails(eventUpdateRequest.getInvitedEmails())
                         .build();
                 eventEmailProducer.sendEventUpdate(updateMessage);
-                log.info("Sent event update message for eventId: {} with {} invitedEmails", 
+                log.info("Sent event update message for eventId: {} with {} invitedEmails",
                         event.getEventId(), eventUpdateRequest.getInvitedEmails().size());
             }
         });
@@ -469,6 +459,99 @@ public class TaskServiceImpl implements TaskService {
         } catch (Exception e) {
             log.error("Failed to sync tasks to cache for user {}: {}", userId, e.getMessage());
         }
+    }
+
+    @Override
+    public Long countEventsInCurrentYear() {
+        Long total = eventRepository.countEventsInCurrentYear();
+        return total != null ? total : 0L;
+    }
+
+    @Override
+    public Long countPersonalEventsInCurrentYear() {
+        Long count = eventRepository.countPersonalEventsInCurrentYear();
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public Long countGroupEventsInCurrentYear() {
+        Long count = eventRepository.countGroupEventsInCurrentYear();
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public List<EventResponse> countEventsByPriorityInCurrentYear() {
+        List<Tuple> results = eventRepository.countEventsByPriorityInCurrentYear();
+        return results.stream()
+                .map(tuple -> EventResponse.builder()
+                        .priority(tuple.get("priorityLevel", String.class))
+                        .taskId(tuple.get("eventCount", Long.class))
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<EventResponse> getUpcomingEvents(Long userId, Integer limit) {
+        int fetchLimit = limit != null ? limit : 10;
+        List<Tuple> results = eventRepository.findUpcomingEventsByUserId(userId, fetchLimit);
+        return results.stream()
+                .map(this::tupleToEventResponse)
+                .toList();
+    }
+
+    @Override
+    public List<EventResponse> getAllEventsByUser(Long userId) {
+        List<Tuple> results = eventRepository.findAllEventsByUserId(userId);
+        return results.stream()
+                .map(this::tupleToEventResponse)
+                .toList();
+    }
+
+    @Override
+    public TaskResponse deleteEvent(Long taskId, Long eventId, Long userId) {
+        deleteTask(taskId, eventId, userId);
+        return TaskResponse.builder().taskId(taskId).build();
+    }
+
+    private EventResponse tupleToEventResponse(Tuple tuple) {
+        return EventResponse.builder()
+                .eventId(tuple.get("eventId", Long.class))
+                .taskId(tuple.get("taskId", Long.class))
+                .title(tuple.get("title", String.class))
+                .description(tuple.get("description", String.class))
+                .startTime(toOffsetDateTime(tuple.get("startTime")))
+                .deadline(toOffsetDateTime(tuple.get("deadline")))
+                .status(tuple.get("status", String.class))
+                .priority(tuple.get("priority", String.class))
+                .eventDescription(tuple.get("eventDescription", String.class))
+                .linkEvent(tuple.get("linkEvent", String.class))
+                .location(tuple.get("location", String.class))
+                .isOnline(tuple.get("isOnline", Boolean.class))
+                .reminderMinutesBefore(tuple.get("reminderMinutesBefore", Integer.class))
+                .invitedEmails(jsonToList(tuple.get("invitedEmails", String.class)))
+                .build();
+    }
+
+    private List<String> jsonToList(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            return List.of();
+        }
+    }
+
+    private OffsetDateTime toOffsetDateTime(Object value) {
+        if (value == null) return null;
+        if (value instanceof OffsetDateTime) return (OffsetDateTime) value;
+        if (value instanceof java.time.Instant) return ((java.time.Instant) value).atOffset(java.time.ZoneOffset.UTC);
+        if (value instanceof java.sql.Timestamp) return ((java.sql.Timestamp) value).toInstant().atOffset(java.time.ZoneOffset.UTC);
+        if (value instanceof String) {
+            try {
+                return OffsetDateTime.parse((String) value);
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 
 }
