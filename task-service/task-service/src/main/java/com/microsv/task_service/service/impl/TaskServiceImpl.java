@@ -18,6 +18,7 @@ import com.microsv.task_service.entity.Event;
 import com.microsv.task_service.entity.Task;
 import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
+import jakarta.persistence.Tuple;
 import com.microsv.task_service.mapper.EventMapper;
 import com.microsv.task_service.mapper.TaskMapper;
 import com.microsv.task_service.messaging.EventEmailProducer;
@@ -28,6 +29,7 @@ import com.microsv.task_service.service.ClaudeTaskConvertService;
 import com.microsv.task_service.service.TaskCacheService;
 import com.microsv.task_service.service.EventReminderRedisService;
 import com.microsv.task_service.util.DateUtil;
+import com.microsv.task_service.util.EnumUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -346,19 +348,56 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public List<TaskResponse> getAllTaskToday(Long userId) {
-        return taskRepository.getAllTaskToday(userId).stream()
-                .map(taskMapper::tupleToTaskResponse).toList();
+        List<Tuple> tuples = taskRepository.getAllTaskToday(userId);
+        Map<Long, Event> eventMap = fetchEventsForTuples(tuples);
+        return tuples.stream()
+                .map(tuple -> tupleToTaskResponse(tuple, eventMap)).toList();
     }
 
     @Override
     public List<TaskResponse> getOverdueTaskToday(Long userId) {
-        return taskRepository.getOverdueTasksToday(userId).stream()
-                .map(taskMapper::tupleToTaskResponse).toList();    }
+        List<Tuple> tuples = taskRepository.getOverdueTasksToday(userId);
+        Map<Long, Event> eventMap = fetchEventsForTuples(tuples);
+        return tuples.stream()
+                .map(tuple -> tupleToTaskResponse(tuple, eventMap)).toList();
+    }
 
     @Override
     public List<TaskResponse> getCompetedTaskToday(Long userId) {
-        return taskRepository.getCompletedTasksToday(userId).stream()
-                .map(taskMapper::tupleToTaskResponse).toList();    }
+        List<Tuple> tuples = taskRepository.getCompletedTasksToday(userId);
+        Map<Long, Event> eventMap = fetchEventsForTuples(tuples);
+        return tuples.stream()
+                .map(tuple -> tupleToTaskResponse(tuple, eventMap)).toList();
+    }
+
+    private Map<Long, Event> fetchEventsForTuples(List<Tuple> tuples) {
+        if (tuples.isEmpty()) return Map.of();
+        List<Long> taskIds = tuples.stream()
+                .map(t -> t.get("taskId", Long.class))
+                .distinct()
+                .toList();
+        return eventRepository.findByTaskIdIn(taskIds).stream()
+                .collect(Collectors.toMap(Event::getTaskId, e -> e));
+    }
+
+    private TaskResponse tupleToTaskResponse(Tuple tuple, Map<Long, Event> eventMap) {
+        Long taskId = tuple.get("taskId", Long.class);
+        Event event = eventMap.get(taskId);
+        return TaskResponse.builder()
+                .taskId(taskId)
+                .title(tuple.get("title", String.class))
+                .description(tuple.get("description", String.class))
+                .deadline(toOffsetDateTime(tuple.get("deadline")))
+                .status(EnumUtil.convertStatus(tuple.get("status")))
+                .priority(EnumUtil.convertPriority(tuple.get("priority")))
+                .createdAt(toOffsetDateTime(tuple.get("createdAt")))
+                .startTime(toOffsetDateTime(tuple.get("startTime")))
+                .completedAt(toOffsetDateTime(tuple.get("completedAt")))
+                .userId(tuple.get("userId", Long.class))
+                .isEvent(event != null)
+                .eventId(event != null ? event.getEventId() : null)
+                .build();
+    }
 
     @Override
     public Double getCompletionRateThisWeek(Long userId) {

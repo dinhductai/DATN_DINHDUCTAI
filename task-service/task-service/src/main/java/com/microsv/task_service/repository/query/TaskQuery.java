@@ -4,7 +4,7 @@ public class TaskQuery {
     public static final String GET_TASKS_IN_TODAY =
             "SELECT t.task_id AS taskId, t.title AS title, t.description AS description, " +
                     "t.deadline AS deadline, t.status AS status, t.priority AS priority, " +
-                    "t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
+                    "t.created_at AS createdAt, t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
                     "FROM tasks t " +
                     "WHERE t.user_id = :userId " +
                     "AND t.deadline IS NOT NULL " +
@@ -15,7 +15,7 @@ public class TaskQuery {
     public static final String GET_OVERDUE_TASK_TODAY =
             "SELECT t.task_id AS taskId, t.title AS title, t.description AS description, " +
                     "t.deadline AS deadline, t.status AS status, t.priority AS priority, " +
-                    "t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
+                    "t.created_at AS createdAt, t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
                     "FROM tasks t " +
                     "WHERE t.user_id = :userId " +
                     "AND t.deadline IS NOT NULL " +
@@ -27,7 +27,7 @@ public class TaskQuery {
     public static final String GET_COMPLETED_TASK_TODAY =
             "SELECT t.task_id AS taskId, t.title AS title, t.description AS description, " +
                     "t.deadline AS deadline, t.status AS status, t.priority AS priority, " +
-                    "t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
+                    "t.created_at AS createdAt, t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
                     "FROM tasks t " +
                     "WHERE t.user_id = :userId " +
                     "AND t.completed_at IS NOT NULL " +
