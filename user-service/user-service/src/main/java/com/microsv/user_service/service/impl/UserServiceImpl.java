@@ -5,6 +5,7 @@ import com.microsv.common.exception.BaseException;
 import com.microsv.user_service.dto.request.UserCreationRequest;
 import com.microsv.user_service.dto.request.UserUpdateRequest;
 import com.microsv.user_service.dto.response.UserAuthResponse;
+import com.microsv.user_service.dto.response.UserProfileResponse;
 import com.microsv.user_service.dto.response.UserResponse;
 import com.microsv.user_service.entity.Role;
 import com.microsv.user_service.entity.User;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -180,7 +182,35 @@ public class UserServiceImpl implements UserService {
         return userRepository.countUsersRegisteredThisWeek();
     }
 
+    @Override
+    public UserProfileResponse getUserProfile(Long userId) {
+        if (userId == null) {
+            throw new BaseException(ErrorCode.INVALID_USER_ID);
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
 
+        int months = 0;
+        if (user.getCreatedAt() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            months = (now.getYear() - user.getCreatedAt().getYear()) * 12
+                    + (now.getMonthValue() - user.getCreatedAt().getMonthValue());
+            if (now.getDayOfMonth() < user.getCreatedAt().getDayOfMonth()) {
+                months--;
+            }
+            if (months < 0) {
+                months = 0;
+            }
+        }
 
+        return UserProfileResponse.builder()
+                .userId(user.getUserId())
+                .userName(user.getUserName())
+                .email(user.getEmail())
+                .profile(user.getProfile())
+                .createdAt(user.getCreatedAt())
+                .registerSince(months)
+                .build();
+    }
 
 }

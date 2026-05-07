@@ -4,6 +4,7 @@ package com.microsv.user_service.controller;
 import com.microsv.user_service.dto.request.UserCreationRequest;
 import com.microsv.user_service.dto.request.UserUpdateRequest;
 import com.microsv.user_service.dto.response.UserAuthResponse;
+import com.microsv.user_service.dto.response.UserProfileResponse;
 import com.microsv.user_service.dto.response.UserResponse;
 import com.microsv.user_service.entity.User;
 import com.microsv.user_service.service.CloudinaryService;
@@ -15,6 +16,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -88,6 +91,13 @@ public class UserController {
             @RequestParam("keyword") String keyword) {
         List<UserResponse> users = userService.searchUserName(keyword);
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<UserProfileResponse> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
+        String subject = jwt.getSubject();
+        Long userId = Long.valueOf(subject);
+        return ResponseEntity.ok(userService.getUserProfile(userId));
     }
 
     // @GetMapping("/search-email")

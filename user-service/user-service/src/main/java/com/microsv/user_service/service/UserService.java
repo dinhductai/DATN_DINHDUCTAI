@@ -5,6 +5,7 @@ package com.microsv.user_service.service;
 import com.microsv.user_service.dto.request.UserCreationRequest;
 import com.microsv.user_service.dto.request.UserUpdateRequest;
 import com.microsv.user_service.dto.response.UserAuthResponse;
+import com.microsv.user_service.dto.response.UserProfileResponse;
 import com.microsv.user_service.dto.response.UserResponse;
 import com.microsv.user_service.entity.User;
 
@@ -23,4 +24,5 @@ public interface UserService {
     long countUser();
     List<UserResponse> searchUserName(String name);
     Long countUserRegisterThisWeek();
+    UserProfileResponse getUserProfile(Long userId);
 }
