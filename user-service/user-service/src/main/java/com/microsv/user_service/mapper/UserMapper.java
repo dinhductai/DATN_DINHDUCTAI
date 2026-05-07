@@ -53,7 +53,6 @@ public class UserMapper {
         // Update fields only (không tạo mới User)
         user.setUserName(request.getUserName());
         user.setEmail(request.getEmail());
-        user.setProfile(request.getProfile());
         
         // Chỉ update password nếu có trong request
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {

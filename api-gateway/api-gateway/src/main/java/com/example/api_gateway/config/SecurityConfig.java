@@ -116,7 +116,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .pathMatchers(HttpMethod.POST, "/api/users/create").hasRole("ADMIN")
                         .pathMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-                        .pathMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
+                        .pathMatchers(HttpMethod.PUT, "/api/users/**").authenticated()
                         .pathMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
                         .pathMatchers("/api/orders/**").authenticated()
                         .pathMatchers("/api/products/**").authenticated()

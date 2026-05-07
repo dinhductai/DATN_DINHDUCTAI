@@ -16,6 +16,4 @@ public class UserUpdateRequest {
     @NotNull
     @Email
     private String email;
-    
-    private String profile;
 }
