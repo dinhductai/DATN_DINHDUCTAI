@@ -13,6 +13,14 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 server:
   port: 9001
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
 eureka:
   instance:
     hostname: user-service
