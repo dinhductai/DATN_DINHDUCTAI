@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "event_invitations")
@@ -29,8 +29,8 @@ public class EventInvitation {
     @Column(name = "status")
     private String status; // PENDING, SENT, FAILED
     
-    @Column(name = "sent_at")
-    private LocalDateTime sentAt;
+    @Column(name = "sent_at", columnDefinition = "timestamptz")
+    private OffsetDateTime sentAt;
     
     @PrePersist
     public void prePersist() {

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "emails")
@@ -29,7 +29,9 @@ public class Email {
     private String errorMessage;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    @Column(columnDefinition = "timestamptz")
+    private OffsetDateTime createdAt;
 
-    private LocalDateTime sentAt;
+    @Column(columnDefinition = "timestamptz")
+    private OffsetDateTime sentAt;
 }

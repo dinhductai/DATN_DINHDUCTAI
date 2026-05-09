@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +43,7 @@ public class EventInvitationService {
         for (EventInvitation invitation : invitations) {
             emailService.sendEventReminderEmail(invitation.getInvitedEmail(), message);
             invitation.setStatus("SENT");
-            invitation.setSentAt(LocalDateTime.now());
+            invitation.setSentAt(OffsetDateTime.now());
             eventInvitationRepository.save(invitation);
         }
         

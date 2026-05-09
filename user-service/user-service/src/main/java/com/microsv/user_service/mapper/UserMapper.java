@@ -10,7 +10,7 @@ import jakarta.persistence.Tuple;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,7 +81,7 @@ public class UserMapper {
                 .password(tuple.get("password",String.class))
                 .email(tuple.get("email", String.class))
                 .profile(tuple.get("profile", String.class))
-                .createdAt(tuple.get("createdAt", LocalDateTime.class))
+                .createdAt(tuple.get("createdAt", OffsetDateTime.class))
                 .build();
     }
 }

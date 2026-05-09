@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -14,6 +14,6 @@ public class UserProfileResponse {
     private String userName;
     private String email;
     private String profile;
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
     private Integer registerSince;
 }

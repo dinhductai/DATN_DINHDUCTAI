@@ -3,7 +3,7 @@ package com.microsv.ai_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "conversation_memory")
@@ -29,8 +29,8 @@ public class ConversationMemory {
     @Column(name = "content",length = 3000) //tăng kích thước lưu trữ câu tl của AI
     private String content;
 
-    @Column(name = "create_at")
-    private Timestamp createAt = new Timestamp(System.currentTimeMillis());
+    @Column(name = "create_at", columnDefinition = "timestamptz")
+    private OffsetDateTime createAt = OffsetDateTime.now();
 
     @Column(name = "user_id",nullable = false)
     private Long userId;

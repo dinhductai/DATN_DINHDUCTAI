@@ -12,7 +12,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Slf4j
@@ -46,7 +46,7 @@ public class EmailService {
             mailSender.send(message);
             
             email.setStatus("SENT");
-            email.setSentAt(LocalDateTime.now());
+            email.setSentAt(OffsetDateTime.now());
             log.info("Email sent successfully to: {}", to);
             
         } catch (MessagingException e) {
