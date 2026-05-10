@@ -32,6 +32,11 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
     private final ConversationMemoryRepository conversationMemoryRepository;
     private final TaskClient taskClient;
 
+    public static final String MODE1_PREFIX = "1_";
+    public static final String MODE2_PREFIX = "2_";
+    public static final String MODE3_PREFIX = "3_";
+    public static final String MODE4_PREFIX = "4_";
+
     @Override
     public void add(String conversationId, List<Message> messages) {
         Long currentUserId = getCurrentUserId();
@@ -51,7 +56,12 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
     @Override
     public List<Message> get(String conversationId) {
         NullUtil.checkUserNullByUserId(getCurrentUserId());
-        List<ConversationMemory> cvMemory = conversationMemoryRepository.findByConversationId(conversationId);
+
+        // Lấy tối đa 10 tin nhắn gần nhất của cuộc trò chuyện này
+        List<ConversationMemory> cvMemory =
+                conversationMemoryRepository.findTop10ByConversationIdOrderByCreateAtDesc(conversationId);
+        // Đảo ngược để có thứ tự cũ → mới (chat memory Advisor cần đúng thứ tự)
+        List<ConversationMemory> orderedMemory = cvMemory.reversed();
 
         // Lấy tasks đã lọc - chỉ TODO/IN_PROGRESS, trong 7 ngày tới, limit 20
         List<TaskResponse> tasks = getSmartFilteredTasks(getCurrentUserId());
@@ -61,7 +71,7 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
         if(!tasks.isEmpty()){
             messages.add(taskContext);
         }
-        messages.addAll(cvMemory.stream().map(this::convertToMessage).collect(Collectors.toList()));
+        messages.addAll(orderedMemory.stream().map(this::convertToMessage).collect(Collectors.toList()));
         return messages;
     }
 
@@ -191,8 +201,39 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
 
     @Override
     public String getConversationId(Long userId) {
-        ConversationMemory conversationMemory = conversationMemoryRepository.findFirstByUserId(userId).orElseThrow();
-        return conversationMemory.getConversationId();
+        return getConversationId(userId, 1);
+    }
+
+    /**
+     * Lấy conversationId mới nhất cho user theo mode.
+     * Trả về format: "<mode>_<uuid>" (VD: "1_abc123...")
+     * Nếu chưa có cuộc trò chuyện nào cho mode này → trả về null để FE tạo mới.
+     */
+    public String getConversationId(Long userId, Integer mode) {
+        String prefix = getPrefixByMode(mode);
+        List<ConversationMemory> memories = conversationMemoryRepository.findByConversationIdLike(prefix + "%");
+        if (memories == null || memories.isEmpty()) {
+            return null;
+        }
+        return memories.get(0).getConversationId();
+    }
+
+    /**
+     * Lấy lịch sử chat theo conversationId cụ thể (có userId check).
+     */
+    public Page<ConversationMemory> getConversationHistory(String conversationId, int page, int size, Long userId) {
+        Pageable pageable = PageRequest.of(page, size);
+        return conversationMemoryRepository.findByConversationIdAndUserId(conversationId, userId, pageable);
+    }
+
+    private String getPrefixByMode(Integer mode) {
+        return switch (mode) {
+            case 1 -> MODE1_PREFIX;
+            case 2 -> MODE2_PREFIX;
+            case 3 -> MODE3_PREFIX;
+            case 4 -> MODE4_PREFIX;
+            default -> MODE1_PREFIX;
+        };
     }
 
     @Override

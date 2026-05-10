@@ -28,7 +28,7 @@ public interface TaskClient {
             @RequestParam(required = false, defaultValue = "20") Integer limit
     );
 
-    //lấy task JSON đã được Claude convert từ Redis
+    //lấy task JSON đã được convert từ Redis (task + event merged)
     @GetMapping(value = "/internal/tasks/ai/json")
     String getTasksJsonForAI(@RequestHeader("userId") Long userId);
 }

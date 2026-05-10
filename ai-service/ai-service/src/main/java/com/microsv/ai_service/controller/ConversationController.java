@@ -2,9 +2,11 @@ package com.microsv.ai_service.controller;
 
 import com.microsv.ai_service.dto.response.AIRichResponse;
 import com.microsv.ai_service.dto.response.ChatAIConversationResponse;
+import com.microsv.ai_service.dto.response.Mode1ChatResponse;
 import com.microsv.ai_service.entity.ConversationMemory;
 import com.microsv.ai_service.service.impl.ChatAIServiceImpl;
 import com.microsv.ai_service.service.impl.ChatMemoryServiceImpl;
+import com.microsv.ai_service.service.impl.Mode1ChatServiceImpl;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,6 +28,30 @@ import java.util.UUID;
 public class ConversationController {
     ChatMemoryServiceImpl chatMemoryService;
     ChatAIServiceImpl chatAIService;
+    Mode1ChatServiceImpl mode1ChatService;
+
+    /**
+     * Mode 1 chat — thống kê & hỏi đáp về lịch trình.
+     * conversationId format: "1_<uuid>" — mode + underscore + uuid.
+     * Nếu conversationId rỗng → tạo mới "1_<uuid>".
+     */
+    @PostMapping("/mode/1")
+    public ResponseEntity<Mode1ChatResponse> chatMode1(
+            @RequestParam(value = "message", required = false) String message,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "conversationId", required = false) String conversationId,
+            @RequestParam(value = "mode", defaultValue = "1") Integer mode,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+
+        if (conversationId == null || conversationId.isBlank()) {
+            conversationId = Mode1ChatServiceImpl.CONVERSATION_ID_PREFIX + UUID.randomUUID().toString();
+        }
+
+        Mode1ChatResponse response = mode1ChatService.chat(message, conversationId, userId);
+        response.setConversationId(conversationId);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public ResponseEntity<ChatAIConversationResponse> chat(
@@ -58,9 +84,11 @@ public class ConversationController {
     }
 
     @GetMapping("/id")
-    public ResponseEntity<String> getConversationId(@AuthenticationPrincipal Jwt jwt){
+    public ResponseEntity<String> getConversationId(
+            @RequestParam(value = "mode", defaultValue = "1") Integer mode,
+            @AuthenticationPrincipal Jwt jwt){
         Long userId  = Long.parseLong(jwt.getSubject());
-        String conversationId = chatMemoryService.getConversationId(userId);
+        String conversationId = chatMemoryService.getConversationId(userId, mode);
         return ResponseEntity.ok(conversationId);
     }
 
@@ -69,6 +97,18 @@ public class ConversationController {
                                                                           @RequestParam(defaultValue = "0") int page,
                                                                           @RequestParam(defaultValue = "10") int size){
         Long userId  = Long.parseLong(jwt.getSubject());
-        Page<ConversationMemory> conversation = chatMemoryService.getConversationMemory(userId,page,size);
+        Page<ConversationMemory> conversation = chatMemoryService.getConversationMemory(userId, page, size);
         return ResponseEntity.ok(conversation);
-    }}
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<Page<ConversationMemory>> getConversationHistory(
+            @RequestParam(value = "conversationId") String conversationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        Page<ConversationMemory> history = chatMemoryService.getConversationHistory(conversationId, page, size, userId);
+        return ResponseEntity.ok(history);
+    }
+}

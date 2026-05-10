@@ -14,6 +14,9 @@ import java.util.Optional;
 @Repository
 public interface ConversationMemoryRepository extends JpaRepository<ConversationMemory, Long> {
     List<ConversationMemory> findByConversationId(String conversationId);
+    List<ConversationMemory> findByConversationIdLike(String conversationIdPrefix);
+    Page<ConversationMemory> findByConversationIdAndUserId(String conversationId, Long userId, Pageable pageable);
+    List<ConversationMemory> findTop10ByConversationIdOrderByCreateAtDesc(String conversationId);
     void deleteByConversationIdAndUserId(String conversationId, Long userId);
     Optional<ConversationMemory> findFirstByUserId(Long userId);
     Page<ConversationMemory> findAllByUserId(Long userId, Pageable pageable);
