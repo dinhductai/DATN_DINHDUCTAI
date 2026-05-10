@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -25,10 +26,13 @@ public class SecurityConfig {
     private String secretKey;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Cho phép WebSocket endpoints
+                        .requestMatchers("/ws/**").permitAll()
                         // Cho phép internal APIs
                         .requestMatchers("/internal/**").permitAll()
                         // Cho phép health/readiness actuator endpoints
@@ -43,10 +47,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").authenticated()
                         // Notification endpoints
                         .requestMatchers("/api/notifications/trigger-daily").permitAll()
+                        .requestMatchers("/api/notifications/trigger-deadline-check").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
                         // Admin endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/tasks/admin").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasAnyRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/tasks/admin").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasAuthority("ADMIN")
                         // Default: require auth
                         .anyRequest().authenticated()
                 )

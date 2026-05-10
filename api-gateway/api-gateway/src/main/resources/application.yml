@@ -11,6 +11,20 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/users/**
+          filters:
+            - RewritePath=/api/users/(?<segment>.*), /api/users/${segment}
+        - id: user-service-v1-route
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**
+          filters:
+            - RewritePath=/api/v1/users/(?<segment>.*), /api/users/${segment}
+        - id: user-service-v1-departments-route
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/departments/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/${segment}
         - id: email-service-route
           uri: lb://email-service
           predicates:
@@ -27,6 +41,26 @@ spring:
           uri: lb://task-service
           predicates:
             - Path=/api/tasks/**
+          filters:
+            - RewritePath=/api/tasks/(?<segment>.*), /api/tasks/${segment}
+        - id: task-service-v1-route
+          uri: lb://task-service
+          predicates:
+            - Path=/api/v1/tasks/**
+          filters:
+            - RewritePath=/api/v1/tasks/(?<segment>.*), /api/tasks/${segment}
+        - id: task-service-websocket-route
+          uri: lb:ws://task-service
+          predicates:
+            - Path=/ws/**
+          filters:
+            - RewritePath=/ws/(?<segment>.*), /ws/${segment}
+        - id: task-service-notifications-route
+          uri: lb://task-service
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - RewritePath=/api/v1/notifications/(?<segment>.*), /api/notifications/${segment}
         - id: ai-service-route
           uri: lb://ai-service
           predicates:
@@ -44,3 +78,6 @@ eureka:
 
 jwt:
   secret: ${JWT_SECRET}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}

@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,5 +90,17 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             @Param("fromDate") OffsetDateTime fromDate,
             @Param("toDate") OffsetDateTime toDate,
             Pageable pageable
+    );
+
+    @Query("""
+        SELECT t FROM Task t
+        WHERE t.startTime BETWEEN :startTime AND :endTime
+        AND t.status IN :statuses
+        ORDER BY t.startTime ASC
+        """)
+    List<Task> findTasksStartingNow(
+            @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime,
+            @Param("statuses") Collection<TaskStatus> statuses
     );
 }

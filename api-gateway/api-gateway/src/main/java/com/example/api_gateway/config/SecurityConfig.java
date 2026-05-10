@@ -31,18 +31,13 @@ public class SecurityConfig {
     @Value("${jwt.secret}")
     private String secretKey;
 
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    private String allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost",
-                "http://127.0.0.1",
-                "http://localhost:8000",
-                "http://127.0.0.1:8000",
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "file://"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -80,7 +75,7 @@ public class SecurityConfig {
         return new HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED);
     }
 
-    // Public endpoints — no JWT filter, no auth required
+        // Public endpoints — no JWT filter, no auth required
     @Bean
     @Order(1)
     public SecurityWebFilterChain publicSecurityWebFilterChain(ServerHttpSecurity http, CorsConfigurationSource cors) {
@@ -90,8 +85,11 @@ public class SecurityConfig {
                         new PathPatternParserServerWebExchangeMatcher("/api/auth/register"),
                         new PathPatternParserServerWebExchangeMatcher("/api/users/register"),
                         new PathPatternParserServerWebExchangeMatcher("/api/users/upload-profile/**"),
-                        // Push notifications disabled
-                        // new PathPatternParserServerWebExchangeMatcher("/api/notifications/**"),
+                        // WebSocket endpoints
+                        new PathPatternParserServerWebExchangeMatcher("/ws/**"),
+                        new PathPatternParserServerWebExchangeMatcher("/api/notifications/trigger-daily"),
+                        new PathPatternParserServerWebExchangeMatcher("/api/notifications/trigger-deadline-check"),
+                        // Eureka
                         new PathPatternParserServerWebExchangeMatcher("/eureka/**"),
                         new PathPatternParserServerWebExchangeMatcher("/internal/**"),
                         new PathPatternParserServerWebExchangeMatcher("/actuator/**")
@@ -113,6 +111,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
+                        .pathMatchers("/ws/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .pathMatchers(HttpMethod.POST, "/api/users/create").hasRole("ADMIN")
                         .pathMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
@@ -121,6 +120,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/orders/**").authenticated()
                         .pathMatchers("/api/products/**").authenticated()
                         .pathMatchers("/api/tasks/**").authenticated()
+                        .pathMatchers("/api/notifications/**").authenticated()
                         .pathMatchers("/api/ai/**").authenticated()
                         .anyExchange().authenticated()
                 )
