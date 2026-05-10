@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                                 .requestMatchers("/internal/**").permitAll()
+                                .requestMatchers("/actuator/health").permitAll()
 
                                 .requestMatchers(HttpMethod.GET, "/api/ai").authenticated()
                                 .requestMatchers(HttpMethod.GET, "/api/ai/**").authenticated()

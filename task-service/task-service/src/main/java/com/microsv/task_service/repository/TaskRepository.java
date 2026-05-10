@@ -44,9 +44,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query(value = TaskQuery.GET_COMPLETION_RATE_THIS_WEEK,nativeQuery = true)
     Double getCompletionRateThisWeekByUser(@Param("userId") Long userId);
 
-    @Query(value = TaskQuery.GET_FREE_HOURS_THIS_WEEK,nativeQuery = true)
-    Double getFreeHoursThisWeek(@Param("userId") Long userId);
-
     @Query(value = TaskQuery.GET_WEEKLY_TASK_STATUS_RATE,nativeQuery = true)
     Tuple getWeeklyTaskRates(@Param("userId") Long userId);
 
@@ -102,5 +99,19 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             @Param("startTime") OffsetDateTime startTime,
             @Param("endTime") OffsetDateTime endTime,
             @Param("statuses") Collection<TaskStatus> statuses
+    );
+
+    @Query("""
+        SELECT t FROM Task t
+        WHERE t.userId = :userId
+        AND t.startTime >= :since
+        AND t.startTime <= :now
+        AND t.taskId NOT IN (SELECT e.taskId FROM Event e WHERE e.taskId IS NOT NULL)
+        ORDER BY t.startTime DESC
+        """)
+    List<Task> findRecentTasksByUserId(
+            @Param("userId") Long userId,
+            @Param("since") OffsetDateTime since,
+            @Param("now") OffsetDateTime now
     );
 }

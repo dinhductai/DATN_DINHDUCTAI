@@ -45,4 +45,6 @@ public interface TaskService {
     java.util.List<EventResponse> getUpcomingEvents(Long userId, Integer limit);
     java.util.List<EventResponse> getAllEventsByUser(Long userId);
     TaskResponse deleteEvent(Long taskId, Long eventId, Long userId);
+    List<RecentTaskResponse> getRecentTasks(Long userId, Integer hours);
+    List<MonthlyEventCountResponse> getEventCountsByMonth();
 }

@@ -220,10 +220,23 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getUpcomingEvents(userId, limit));
     }
 
+    @GetMapping("/events/statistics/monthly")
+    public ResponseEntity<List<MonthlyEventCountResponse>> getEventCountsByMonth() {
+        return ResponseEntity.ok(taskService.getEventCountsByMonth());
+    }
+
     @GetMapping("/events")
     public ResponseEntity<List<EventResponse>> getAllEvents(@AuthenticationPrincipal Jwt jwt) {
         Long userId = Long.parseLong(jwt.getSubject());
         return ResponseEntity.ok(taskService.getAllEventsByUser(userId));
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<RecentTaskResponse>> getRecentTasks(
+            @RequestParam(required = false, defaultValue = "48") Integer hours,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        return ResponseEntity.ok(taskService.getRecentTasks(userId, hours));
     }
 
     @DeleteMapping("/events/{taskId}")

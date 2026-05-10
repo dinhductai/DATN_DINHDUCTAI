@@ -89,4 +89,23 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         ORDER BY t.start_time DESC
         """, nativeQuery = true)
     List<Tuple> findAllEventsByUserId(@Param("userId") Long userId);
+
+    // Count events by month for last 12 months
+    @Query(value = """
+        SELECT
+            LPAD(EXTRACT(MONTH FROM t.start_time)::TEXT, 2, '0') AS month,
+            EXTRACT(YEAR FROM t.start_time) AS year,
+            COUNT(e.event_id) AS eventCount
+        FROM events e
+        JOIN tasks t ON e.task_id = t.task_id
+        WHERE t.start_time >= CURRENT_DATE - INTERVAL '12 months'
+        GROUP BY
+            EXTRACT(YEAR FROM t.start_time),
+            LPAD(EXTRACT(MONTH FROM t.start_time)::TEXT, 2, '0')
+        ORDER BY
+            EXTRACT(YEAR FROM t.start_time),
+            LPAD(EXTRACT(MONTH FROM t.start_time)::TEXT, 2, '0')
+        """, nativeQuery = true)
+    List<Tuple> countEventsByMonth();
 }
+

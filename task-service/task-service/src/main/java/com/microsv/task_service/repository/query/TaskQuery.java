@@ -49,26 +49,6 @@ public class TaskQuery {
                     "   AND t.deadline IS NOT NULL\n" +
                     "   AND DATE_TRUNC('week', t.deadline AT TIME ZONE 'Asia/Bangkok') = DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Bangkok')";
 
-    public static final String GET_FREE_HOURS_THIS_WEEK =
-            "WITH week_bounds AS (\n" +
-                    "    SELECT \n" +
-                    "        DATE_TRUNC('week', CURRENT_DATE) AS week_start,\n" +
-                    "        DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days' AS week_end\n" +
-                    "),\n" +
-                    "busy_hours AS (\n" +
-                    "    SELECT COALESCE(SUM(\n" +
-                    "        EXTRACT(EPOCH FROM (COALESCE(t.completed_at, t.deadline) - t.start_time)) / 3600.0\n" +
-                    "    ), 0) AS used_hours\n" +
-                    "    FROM tasks t\n" +
-                    "    CROSS JOIN week_bounds w\n" +
-                    "    WHERE \n" +
-                    "        t.user_id = :userId\n" +
-                    "        AND t.deadline >= w.week_start\n" +
-                    "        AND t.deadline < w.week_end\n" +
-                    ")\n" +
-                    "SELECT \n" +
-                    "    GREATEST(0, ROUND(168.0 - (SELECT used_hours FROM busy_hours), 2)) AS free_hours;";
-
     public static final String GET_WEEKLY_TASK_STATUS_RATE =
             "SELECT \n" +
                     "    COUNT(CASE WHEN t.status = 'DONE' THEN 1 END) AS completedRate,\n" +

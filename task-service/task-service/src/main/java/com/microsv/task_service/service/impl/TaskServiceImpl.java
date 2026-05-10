@@ -18,6 +18,8 @@ import com.microsv.task_service.entity.Event;
 import com.microsv.task_service.entity.Task;
 import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
 import com.microsv.task_service.mapper.EventMapper;
 import com.microsv.task_service.mapper.TaskMapper;
@@ -54,6 +56,8 @@ import org.springframework.data.domain.Pageable;
 @Service
 @Slf4j
 public class TaskServiceImpl implements TaskService {
+    @PersistenceContext
+    EntityManager entityManager;
     TaskMapper taskMapper;
     TaskRepository taskRepository;
     EventRepository eventRepository;
@@ -406,7 +410,40 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Double getFreeHoursThisWeek(Long userId) {
-        return taskRepository.getFreeHoursThisWeek(userId);
+        String sql =
+                "WITH week_bounds AS ("
+                        + " SELECT"
+                        + "  DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') AS week_start,"
+                        + "  (DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + INTERVAL '7 days') AS week_end"
+                        + "),"
+                        + "busy_hours AS ("
+                        + " SELECT"
+                        + "  COALESCE(SUM(GREATEST(0.0, EXTRACT(EPOCH FROM ("
+                        + "   LEAST(COALESCE(t.deadline AT TIME ZONE 'Asia/Bangkok', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Bangkok')), w.week_end) -"
+                        + "   GREATEST(COALESCE(t.start_time AT TIME ZONE 'Asia/Bangkok', w.week_start), w.week_start)"
+                        + "  )) / 3600.0)), 0.0) AS used_hours"
+                        + " FROM tasks t"
+                        + " CROSS JOIN week_bounds w"
+                        + " WHERE t.user_id = :userId"
+                        + " AND t.deadline AT TIME ZONE 'Asia/Bangkok' > w.week_start"
+                        + " AND COALESCE(t.start_time AT TIME ZONE 'Asia/Bangkok', w.week_start) < w.week_end"
+                        + ")"
+                        + "SELECT"
+                        + " GREATEST(0.0, ROUND(112.0 - COALESCE((SELECT used_hours FROM busy_hours), 0.0), 2)) AS free_hours";
+
+        try {
+            Object result = entityManager.createNativeQuery(sql)
+                    .setParameter("userId", userId)
+                    .getSingleResult();
+
+            if (result instanceof Number) {
+                return ((Number) result).doubleValue();
+            }
+            return 0.0;
+        } catch (Exception e) {
+            log.error("Error calculating free hours for userId={}: {}", userId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Override
@@ -501,6 +538,22 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public List<RecentTaskResponse> getRecentTasks(Long userId, Integer hours) {
+        OffsetDateTime since = OffsetDateTime.now().minusHours(hours != null ? hours : 48);
+        OffsetDateTime now = OffsetDateTime.now();
+        List<Task> tasks = taskRepository.findRecentTasksByUserId(userId, since, now);
+        return tasks.stream()
+                .map(t -> RecentTaskResponse.builder()
+                        .taskId(t.getTaskId())
+                        .title(t.getTitle())
+                        .status(t.getStatus())
+                        .priority(t.getPriority())
+                        .startTime(t.getStartTime())
+                        .build())
+                .toList();
+    }
+
+    @Override
     public Long countEventsInCurrentYear() {
         Long total = eventRepository.countEventsInCurrentYear();
         return total != null ? total : 0L;
@@ -591,6 +644,39 @@ public class TaskServiceImpl implements TaskService {
             } catch (Exception ignored) {}
         }
         return null;
+    }
+
+    @Override
+    public List<MonthlyEventCountResponse> getEventCountsByMonth() {
+        List<Tuple> results = eventRepository.countEventsByMonth();
+
+        // Build a map of (year, month) -> count using padded month numbers ("01", "02", etc.)
+        Map<String, Long> countMap = new java.util.LinkedHashMap<>();
+        for (Tuple tuple : results) {
+            String month = tuple.get("month", String.class);
+            Long year = ((Number) tuple.get("year")).longValue();
+            Long count = ((Number) tuple.get("eventCount")).longValue();
+            countMap.put(year + "-" + month, count != null ? count : 0L);
+        }
+
+        // Generate last 12 months from current month going backwards
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.util.List<MonthlyEventCountResponse> result = new java.util.ArrayList<>();
+        java.time.format.DateTimeFormatter paddedMonth = java.time.format.DateTimeFormatter.ofPattern("MM");
+        java.time.format.DateTimeFormatter viFormatter = java.time.format.DateTimeFormatter.ofPattern("'Thg 'M", java.util.Locale.forLanguageTag("vi"));
+
+        for (int i = 11; i >= 0; i--) {
+            java.time.LocalDate monthDate = today.minusMonths(i);
+            String key = monthDate.getYear() + "-" + monthDate.format(paddedMonth);
+            String monthLabel = monthDate.format(viFormatter);
+            Long count = countMap.getOrDefault(key, 0L);
+            result.add(MonthlyEventCountResponse.builder()
+                    .month(monthLabel)
+                    .events(count)
+                    .build());
+        }
+
+        return result;
     }
 
 }
