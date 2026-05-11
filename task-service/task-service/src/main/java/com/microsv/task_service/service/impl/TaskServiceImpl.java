@@ -198,14 +198,15 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         Task updatedTask = taskRepository.save(task);
-        TaskResponse response = taskMapper.toTaskResponse(updatedTask);
-        syncTasksToRedis(userId);
         
         // Xử lý update event nếu có
         if (request.getEventId() != null && request.getEventUpdateRequest() != null) {
             handleEventUpdate(task, request.getEventId(), request.getEventUpdateRequest(), oldStartTime);
         }
         
+        // Trả về response SAU KHI event đã được update để lấy dữ liệu event mới nhất
+        TaskResponse response = taskMapper.toTaskResponse(updatedTask);
+        syncTasksToRedis(userId);
         return response;
         }catch (Exception e){
             throw new BaseException(ErrorCode.DATABASE_QUERY_ERROR);

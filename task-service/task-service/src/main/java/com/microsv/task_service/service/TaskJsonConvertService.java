@@ -175,6 +175,16 @@ public class TaskJsonConvertService {
             entry.put("isOnline", event.getIsOnline() != null ? event.getIsOnline() : false);
             entry.put("reminderMinutesBefore", event.getReminderMinutesBefore() != null ? event.getReminderMinutesBefore() : 30);
 
+            // Event startTime = task.startTime (chuyển UTC → VN)
+            if (task.getStartTime() != null) {
+                ZonedDateTime startTimeVn = task.getStartTime().atZoneSameInstant(VIETNAM);
+                entry.put("startTime", startTimeVn.format(DEADLINE_FORMATTER));
+                entry.put("startTimeRaw", startTimeVn.format(DEADLINE_RAW_FORMATTER));
+            } else {
+                entry.put("startTime", null);
+                entry.put("startTimeRaw", null);
+            }
+
             // Parse invitedEmails JSON string to List
             if (event.getInvitedEmails() != null && !event.getInvitedEmails().isBlank()) {
                 try {

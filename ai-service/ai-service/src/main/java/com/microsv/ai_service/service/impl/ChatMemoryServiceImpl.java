@@ -7,6 +7,7 @@ import com.microsv.ai_service.repository.ConversationMemoryRepository;
 import com.microsv.ai_service.service.ConversationMemoryService;
 import com.microsv.ai_service.util.NullUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemoryService {
     private final ConversationMemoryRepository conversationMemoryRepository;
@@ -55,24 +57,30 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
 
     @Override
     public List<Message> get(String conversationId) {
-        NullUtil.checkUserNullByUserId(getCurrentUserId());
+        try {
+            Long currentUserId = getCurrentUserId();
+            NullUtil.checkUserNullByUserId(currentUserId);
 
-        // Lấy tối đa 10 tin nhắn gần nhất của cuộc trò chuyện này
-        List<ConversationMemory> cvMemory =
-                conversationMemoryRepository.findTop5ByConversationIdOrderByCreateAtDesc(conversationId);
-        // Đảo ngược để có thứ tự cũ → mới (chat memory Advisor cần đúng thứ tự)
-        List<ConversationMemory> orderedMemory = cvMemory.reversed();
+            // Lấy tối đa 10 tin nhắn gần nhất của cuộc trò chuyện này
+            List<ConversationMemory> cvMemory =
+                    conversationMemoryRepository.findTop5ByConversationIdOrderByCreateAtDesc(conversationId);
+            // Đảo ngược để có thứ tự cũ → mới (chat memory Advisor cần đúng thứ tự)
+            List<ConversationMemory> orderedMemory = cvMemory.reversed();
 
-        // Lấy tasks đã lọc - chỉ TODO/IN_PROGRESS, trong 7 ngày tới, limit 20
-        List<TaskResponse> tasks = getSmartFilteredTasks(getCurrentUserId());
+            // Lấy tasks đã lọc - chỉ TODO/IN_PROGRESS, trong 7 ngày tới, limit 20
+            List<TaskResponse> tasks = getSmartFilteredTasks(currentUserId);
 
-        Message taskContext = createTaskContext(tasks);
-        List<Message> messages = new ArrayList<>();
-        if(!tasks.isEmpty()){
-            messages.add(taskContext);
+            Message taskContext = createTaskContext(tasks);
+            List<Message> messages = new ArrayList<>();
+            if(!tasks.isEmpty()){
+                messages.add(taskContext);
+            }
+            messages.addAll(orderedMemory.stream().map(this::convertToMessage).collect(Collectors.toList()));
+            return messages;
+        } catch (Exception e) {
+            log.warn("Failed to load chat memory for conversation {}: {}", conversationId, e.getMessage());
+            return List.of();
         }
-        messages.addAll(orderedMemory.stream().map(this::convertToMessage).collect(Collectors.toList()));
-        return messages;
     }
 
     /**

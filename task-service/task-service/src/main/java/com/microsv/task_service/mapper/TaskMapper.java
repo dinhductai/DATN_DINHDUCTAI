@@ -18,9 +18,11 @@ import java.util.stream.Collectors;
 @Component
 public class TaskMapper {
     private final EventRepository eventRepository;
+    private final EventMapper eventMapper;
 
-    public TaskMapper(EventRepository eventRepository) {
+    public TaskMapper(EventRepository eventRepository, EventMapper eventMapper) {
         this.eventRepository = eventRepository;
+        this.eventMapper = eventMapper;
     }
     public Task taskCreationRequestToTask(TaskCreationRequest request, Long userId){
         return Task.builder()
@@ -36,7 +38,7 @@ public class TaskMapper {
 
     public TaskResponse toTaskResponse(Task task) {
         Event event = eventRepository.findByTaskId(task.getTaskId()).orElse(null);
-        
+
         return TaskResponse.builder()
                 .taskId(task.getTaskId())
                 .title(task.getTitle())
@@ -50,12 +52,18 @@ public class TaskMapper {
                 .userId(task.getUserId())
                 .isEvent(event != null)
                 .eventId(event != null ? event.getEventId() : null)
+                .eventDescription(event != null ? event.getEventDescription() : null)
+                .linkEvent(event != null ? event.getLinkEvent() : null)
+                .location(event != null ? event.getLocation() : null)
+                .isOnline(event != null ? event.getIsOnline() : null)
+                .reminderMinutesBefore(event != null ? event.getReminderMinutesBefore() : null)
+                .invitedEmails(event != null ? eventMapper.jsonToList(event.getInvitedEmails()) : null)
                 .build();
     }
 
     public TaskResponse toTaskResponse(Task task, Map<Long, Event> eventMap) {
         Event event = eventMap.get(task.getTaskId());
-        
+
         return TaskResponse.builder()
                 .taskId(task.getTaskId())
                 .title(task.getTitle())
@@ -69,6 +77,12 @@ public class TaskMapper {
                 .userId(task.getUserId())
                 .isEvent(event != null)
                 .eventId(event != null ? event.getEventId() : null)
+                .eventDescription(event != null ? event.getEventDescription() : null)
+                .linkEvent(event != null ? event.getLinkEvent() : null)
+                .location(event != null ? event.getLocation() : null)
+                .isOnline(event != null ? event.getIsOnline() : null)
+                .reminderMinutesBefore(event != null ? event.getReminderMinutesBefore() : null)
+                .invitedEmails(event != null ? eventMapper.jsonToList(event.getInvitedEmails()) : null)
                 .build();
     }
 
@@ -94,6 +108,12 @@ public class TaskMapper {
                 .userId(tuple.get("userId", Long.class))
                 .isEvent(event != null)
                 .eventId(event != null ? event.getEventId() : null)
+                .eventDescription(event != null ? event.getEventDescription() : null)
+                .linkEvent(event != null ? event.getLinkEvent() : null)
+                .location(event != null ? event.getLocation() : null)
+                .isOnline(event != null ? event.getIsOnline() : null)
+                .reminderMinutesBefore(event != null ? event.getReminderMinutesBefore() : null)
+                .invitedEmails(event != null ? eventMapper.jsonToList(event.getInvitedEmails()) : null)
                 .build();
     }
 

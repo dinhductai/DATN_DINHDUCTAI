@@ -26,4 +26,12 @@ public class TaskResponse {
     private Long userId;
     private Boolean isEvent;
     private Long eventId;
+
+    // Event detail fields
+    private String eventDescription;
+    private String linkEvent;
+    private String location;
+    private Boolean isOnline;
+    private Integer reminderMinutesBefore;
+    private java.util.List<String> invitedEmails;
 }
