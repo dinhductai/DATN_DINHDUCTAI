@@ -25,4 +25,5 @@ public interface UserService {
     List<UserResponse> searchUserName(String name);
     Long countUserRegisterThisWeek();
     UserProfileResponse getUserProfile(Long userId);
+    List<Long> getAllUserIds();
 }

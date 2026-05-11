@@ -213,4 +213,11 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+    @Override
+    public List<Long> getAllUserIds() {
+        return userRepository.findAll().stream()
+                .map(User::getUserId)
+                .collect(Collectors.toList());
+    }
+
 }

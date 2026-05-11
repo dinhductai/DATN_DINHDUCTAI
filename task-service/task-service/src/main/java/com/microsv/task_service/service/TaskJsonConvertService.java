@@ -12,7 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.ZoneId;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,7 +25,9 @@ public class TaskJsonConvertService {
 
     private final ObjectMapper objectMapper;
 
-    private static final DateTimeFormatter DEADLINE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final ZoneId VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter DEADLINE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(VIETNAM);
+    private static final DateTimeFormatter DEADLINE_RAW_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(VIETNAM);
 
     private static final Map<TaskStatus, String> STATUS_VI = Map.of(
             TaskStatus.TODO, "Chưa làm",
@@ -92,7 +96,7 @@ public class TaskJsonConvertService {
         long doneCount = tasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
         long overdueCount = tasks.stream()
                 .filter(t -> t.getDeadline() != null
-                        && t.getDeadline().isBefore(OffsetDateTime.now())
+                        && t.getDeadline().isBefore(OffsetDateTime.now(VIETNAM))
                         && t.getStatus() != TaskStatus.DONE)
                 .count();
         long eventCount = taskIdToEvent.size();
@@ -128,10 +132,12 @@ public class TaskJsonConvertService {
 
         // Deadline formatting
         if (task.getDeadline() != null) {
-            entry.put("deadline", task.getDeadline().format(DEADLINE_FORMATTER));
-            entry.put("deadlineRaw", task.getDeadline().toString());
+            // Format deadline theo giờ Việt Nam (chuyển từ UTC → VN trước khi format)
+            ZonedDateTime deadlineVn = task.getDeadline().atZoneSameInstant(VIETNAM);
+            entry.put("deadline", deadlineVn.format(DEADLINE_FORMATTER));
+            entry.put("deadlineRaw", deadlineVn.format(DEADLINE_RAW_FORMATTER));
 
-            String friendlyDeadline = computeFriendlyDeadline(task.getDeadline(), task.getStatus());
+            String friendlyDeadline = computeFriendlyDeadline(deadlineVn, task.getStatus());
             entry.put("deadlineInfo", friendlyDeadline);
         } else {
             entry.put("deadline", "Không có hạn chót");
@@ -139,19 +145,21 @@ public class TaskJsonConvertService {
             entry.put("deadlineInfo", "Không có hạn chót");
         }
 
-        // CreatedAt (BE field: startTime)
+        // CreatedAt (BE field: startTime) — format theo giờ Việt Nam
         if (task.getStartTime() != null) {
-            entry.put("createdAt", task.getStartTime().format(DEADLINE_FORMATTER));
-            entry.put("createdAtRaw", task.getStartTime().toString());
+            ZonedDateTime startTimeVn = task.getStartTime().atZoneSameInstant(VIETNAM);
+            entry.put("createdAt", startTimeVn.format(DEADLINE_FORMATTER));
+            entry.put("createdAtRaw", startTimeVn.format(DEADLINE_RAW_FORMATTER));
         } else {
             entry.put("createdAt", null);
             entry.put("createdAtRaw", null);
         }
 
-        // CompletedAt
+        // CompletedAt — format theo giờ Việt Nam
         if (task.getCompletedAt() != null) {
-            entry.put("completedAt", task.getCompletedAt().format(DEADLINE_FORMATTER));
-            entry.put("completedAtRaw", task.getCompletedAt().toString());
+            ZonedDateTime completedAtVn = task.getCompletedAt().atZoneSameInstant(VIETNAM);
+            entry.put("completedAt", completedAtVn.format(DEADLINE_FORMATTER));
+            entry.put("completedAtRaw", completedAtVn.format(DEADLINE_RAW_FORMATTER));
         } else {
             entry.put("completedAt", task.getStatus() == TaskStatus.DONE ? "Đã hoàn thành" : "Chưa hoàn thành");
             entry.put("completedAtRaw", null);
@@ -188,12 +196,12 @@ public class TaskJsonConvertService {
         return entry;
     }
 
-    private String computeFriendlyDeadline(OffsetDateTime deadline, TaskStatus status) {
+    private String computeFriendlyDeadline(ZonedDateTime deadline, TaskStatus status) {
         if (status == TaskStatus.DONE) {
             return "Đã hoàn thành";
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now(VIETNAM);
         Duration diff = Duration.between(now, deadline);
 
         if (diff.isNegative()) {

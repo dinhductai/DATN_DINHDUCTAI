@@ -10,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -31,22 +29,20 @@ public class TaskInternalController {
         return ResponseEntity.ok(responses);
     }
 
+    /**
+     * Lấy task JSON cho AI.
+     * LUÔN re-sync từ DB để đảm bảo AI nhìn thấy data mới nhất.
+     * Không dùng cache stale — AI cần data chính xác.
+     */
     @GetMapping("/ai/json")
     public ResponseEntity<String> getTasksJsonForAI(@RequestHeader("userId") Long userId) {
-        // Try to get from cache and refresh TTL if exists
-        String cachedJson = taskCacheService.getCachedTaskJsonWithRefresh(userId);
-        if (cachedJson != null) {
-            return ResponseEntity.ok(cachedJson);
-        }
-
-        // Cache miss - load from DB, convert with Claude, cache, then return
+        // Luôn re-sync từ DB → đảm bảo AI luôn nhận data mới nhất
         taskService.syncTasksToCache(userId);
-        String newJson = taskCacheService.getCachedTaskJson(userId);
-        if (newJson != null) {
-            return ResponseEntity.ok(newJson);
+        String json = taskCacheService.getCachedTaskJson(userId);
+        if (json != null) {
+            return ResponseEntity.ok(json);
         }
-
-        return ResponseEntity.ok("{\"tasks\": []}");
+        return ResponseEntity.ok("{\"summary\":{\"totalTasks\":0,\"eventCount\":0},\"tasks\":[]}");
     }
 
     @PostMapping("/ai/refresh")

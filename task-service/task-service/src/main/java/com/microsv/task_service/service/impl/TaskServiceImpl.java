@@ -530,9 +530,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public void syncTasksToCache(Long userId) {
         try {
-            // Chỉ lấy tasks trong 30 ngày gần nhất để tránh context quá lớn cho AI
-            OffsetDateTime since = OffsetDateTime.now().minusDays(30);
-            List<Task> tasks = taskRepository.findRecentTasksByUserId(userId, since, OffsetDateTime.now());
+            List<Task> tasks = taskRepository.findTasksForAiSync(userId);
             claudeTaskConvertService.syncUserTasks(userId, tasks);
         } catch (Exception e) {
             log.error("Failed to sync tasks to cache for user {}: {}", userId, e.getMessage());

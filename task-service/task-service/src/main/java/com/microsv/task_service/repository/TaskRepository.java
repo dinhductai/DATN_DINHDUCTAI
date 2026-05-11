@@ -106,7 +106,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
         WHERE t.userId = :userId
         AND t.startTime >= :since
         AND t.startTime <= :now
-        AND t.taskId NOT IN (SELECT e.taskId FROM Event e WHERE e.taskId IS NOT NULL)
         ORDER BY t.startTime DESC
         """)
     List<Task> findRecentTasksByUserId(
@@ -114,4 +113,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             @Param("since") OffsetDateTime since,
             @Param("now") OffsetDateTime now
     );
+
+    @Query(value = """
+        SELECT t.* FROM tasks t
+        WHERE t.user_id = :userId
+        AND t.deadline IS NOT NULL
+        AND (t.deadline AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
+            BETWEEN (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date - INTERVAL '14 days'
+            AND     (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + INTERVAL '14 days'
+        ORDER BY t.deadline ASC
+        """, nativeQuery = true)
+    List<Task> findTasksForAiSync(@Param("userId") Long userId);
 }

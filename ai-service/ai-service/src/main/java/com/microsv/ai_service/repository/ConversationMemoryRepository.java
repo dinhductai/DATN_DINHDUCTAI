@@ -16,7 +16,7 @@ public interface ConversationMemoryRepository extends JpaRepository<Conversation
     List<ConversationMemory> findByConversationId(String conversationId);
     List<ConversationMemory> findByConversationIdLike(String conversationIdPrefix);
     Page<ConversationMemory> findByConversationIdAndUserId(String conversationId, Long userId, Pageable pageable);
-    List<ConversationMemory> findTop10ByConversationIdOrderByCreateAtDesc(String conversationId);
+    List<ConversationMemory> findTop5ByConversationIdOrderByCreateAtDesc(String conversationId);
     void deleteByConversationIdAndUserId(String conversationId, Long userId);
     Optional<ConversationMemory> findFirstByUserId(Long userId);
     Page<ConversationMemory> findAllByUserId(Long userId, Pageable pageable);

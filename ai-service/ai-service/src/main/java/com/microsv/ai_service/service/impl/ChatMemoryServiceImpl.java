@@ -59,7 +59,7 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
 
         // Lấy tối đa 10 tin nhắn gần nhất của cuộc trò chuyện này
         List<ConversationMemory> cvMemory =
-                conversationMemoryRepository.findTop10ByConversationIdOrderByCreateAtDesc(conversationId);
+                conversationMemoryRepository.findTop5ByConversationIdOrderByCreateAtDesc(conversationId);
         // Đảo ngược để có thứ tự cũ → mới (chat memory Advisor cần đúng thứ tự)
         List<ConversationMemory> orderedMemory = cvMemory.reversed();
 
