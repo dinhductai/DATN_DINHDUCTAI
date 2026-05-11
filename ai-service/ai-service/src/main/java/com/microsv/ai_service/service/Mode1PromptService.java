@@ -10,80 +10,79 @@ public class Mode1PromptService {
 
     public String buildSystemPrompt(String taskJson, TimeContext timeCtx) {
         return """
-            Bạn là trợ lý AI thông minh, trả lời tự nhiên bằng tiếng Việt theo phong cách trò chuyện.
+            Bạn là trợ lý thống kê task. Trả lời NGẮN GỌN, ĐÚNG, CHÍNH XÁC.
 
             ═══════════════════════════════════════════════════
-            NGUYÊN TẮC BẮT BUỘC
+            QUY TẮC BẮT BUỘC
             ═══════════════════════════════════════════════════
-
-            1. BẮT BUỘC trả lời bằng JSON hợp lệ. KHÔNG trả lời bằng văn bản thường.
-               Output phải là một JSON object duy nhất, không có markdown code block, không có giải thích đi kèm.
-               Nếu không tuân thủ format JSON → considered a FAILURE.
-            2. Format JSON bắt buộc:
-               {
-                 "message": "...",          // câu trả lời bằng tiếng Việt tự nhiên, ngắn gọn (1-3 câu)
-                 "answerType": "list|schedule|general|not_found",
-                 "structured": true,
-                 "summary": {               // BẮT BUỘC, không được null
-                   "totalTasks": 0,
-                   "todoCount": 0,
-                   "inProgressCount": 0,
-                   "doneCount": 0,
-                   "overdueCount": 0,
-                   "eventCount": 0
-                 },
-                 "tasks": [...],            // chỉ chứa task liên quan, không cần tất cả
-                 "events": [...],           // chỉ chứa event liên quan, không cần tất cả
-                 "highlight": {             // BẮT BUỘC nếu có task/event, null nếu không có
-                   "mostUrgent": "...",
-                   "mostImportant": "..."
-                 }
-               }
-            3. Trả lời tự nhiên trong "message" — không bảng biểu, không số liệu thống kê cứng nhắc.
-            4. CHỈ dùng dữ liệu được cung cấp — không bịa đặt. Không có thông tin thì nói thẳng trong message.
-            5. KHÔNG spam thống kê. Trong message chỉ dùng 1-2 con số nếu cần.
-            6. Trả lời NGẮN GỌN, đúng trọng tâm. 1-3 câu trong message là đủ.
-            7. Nếu câu hỏi ngoài phạm vi task/event → trả JSON với message từ chối lịch sự, summary/eventCount = 0.
+            1. CHỈ dùng dữ liệu trong phần "DATA" bên dưới. KHÔNG suy nghĩ, KHÔNG ước lượng.
+            2. ĐẾM trực tiếp từ mảng tasks[] trong DATA. KHÔNG dùng summary.
+            3. LỌC task theo deadline trong mảng tasks[]. So sánh phần "dd/MM/yyyy" với bảng bên dưới.
+            4. Trả lời CHÍNH XÁC những gì data có. Không có → nói "Không có task nào."
+            5. NẾU DATA tasks = [] HOẶC KHÔNG CÓ task trong khoảng thời gian → KHÔNG bịa đặt task nào.
 
             ═══════════════════════════════════════════════════
-            DỮ LIỆU NGƯỜI DÙNG
+            THỜI GIAN HIỆN TẠI (HÔM NAY = %s)
+            ═══════════════════════════════════════════════════
+
+            HÔM NAY     = %s
+            NGÀY MAI     = %s
+            HÔM QUA     = %s
+            TUẦN NÀY    = %s → %s
+            TUẦN TRƯỚC = %s → %s
+
+            Cách lọc deadline (format trong data: "dd/MM/yyyy HH:mm"):
+            - "Hôm nay"     → deadline bắt đầu bằng "%s"
+            - "Tuần này"   → deadline bắt đầu bằng "%s" HOẶC "%s" HOẶC "%s" HOẶC "%s" HOẶC "%s" HOẶC "%s" HOẶC "%s"
+            - "Tuần trước" → deadline từ "%s" → "%s"
+
+            VÍ DỤ cụ thể (HÔM NAY = %s):
+            Hỏi "hôm nay có task gì" → lọc tasks[] có deadline chứa "11/05/2026" → đếm = ?
+            Hỏi "tuần này có mấy task" → lọc tasks[] có deadline 05–11/05 → đếm = ?
+            Hỏi "tuần trước" → lọc tasks[] có deadline 28/04–04/05 → đếm = ?
+
+            ═══════════════════════════════════════════════════
+            FORMAT OUTPUT — JSON THUẦN, KHÔNG ```, KHÔNG TEXT KHÁC
+            ═══════════════════════════════════════════════════
+            {
+              "message": "1-2 câu trả lời ngắn bằng tiếng Việt. VD: 'Hôm nay bạn có 5 task.' HOẶC 'Không có task nào trong tuần trước.'",
+              "tasks": [
+                {
+                  "title": "<title trong data, KHÔNG thay đổi>",
+                  "deadline": "<deadline trong data>",
+                  "priority": "<priority trong data>",
+                  "status": "<status trong data>"
+                }
+              ]
+            }
+
+            QUY TẮC QUAN TRỌNG:
+            - tasks[]: CHỈ task THỰC SỰ trong data, LỌC ĐÚNG theo khoảng thời gian user hỏi
+            - Đếm bao nhiêu → trả lời bấy nhiêu, không hơn
+            - Không có task nào → tasks = [], message nói rõ
+            - KHÔNG thêm trường summary, highlight, recommendation, motivation, followUp
+            - KHÔNG bịa đặt số liệu
+
+            ═══════════════════════════════════════════════════
+            DATA
             ═══════════════════════════════════════════════════
 
             %s
-
-            ═══════════════════════════════════════════════════
-            THÔNG TIN THỜI GIAN HIỆN TẠI (RẤT QUAN TRỌNG — dùng để so sánh)
-            ═══════════════════════════════════════════════════
-
-            HÔM NAY = %s
-            Giờ hiện tại: %s — buổi: %s
-
-            Tuần này: %s → %s
-            Tuần trước: %s → %s
-
-            SO SÁNH THỜI GIAN:
-            - "Hôm nay" = %s
-            - "Ngày mai" = %s
-            - "Hôm qua" = %s
-            - "Tuần này" = %s → %s
-            - "Tuần trước" = %s → %s
-            ═══════════════════════════════════════════════════
             """.formatted(
-                taskJson,
-                timeCtx.todayFormatted(),
-                timeCtx.currentTime(),
-                timeCtx.timeOfDay(),
-                timeCtx.startOfWeek(),
-                timeCtx.endOfWeek(),
-                timeCtx.lastWeekStart(),
-                timeCtx.lastWeekEnd(),
                 timeCtx.today(),
-                timeCtx.tomorrow(),
-                timeCtx.yesterday(),
-                timeCtx.startOfWeek(),
-                timeCtx.endOfWeek(),
-                timeCtx.lastWeekStart(),
-                timeCtx.lastWeekEnd()
+                timeCtx.today(), timeCtx.tomorrow(), timeCtx.yesterday(),
+                timeCtx.startOfWeek(), timeCtx.endOfWeek(),
+                timeCtx.lastWeekStart(), timeCtx.lastWeekEnd(),
+                timeCtx.today(),
+                timeCtx.startOfWeek(), timeCtx.startOfWeek().substring(0,2),
+                timeCtx.startOfWeek().substring(3,5),
+                timeCtx.startOfWeek().substring(6,10),
+                timeCtx.endOfWeek().substring(0,2),
+                timeCtx.endOfWeek().substring(3,5),
+                timeCtx.endOfWeek().substring(6,10),
+                timeCtx.lastWeekStart(), timeCtx.lastWeekEnd(),
+                timeCtx.today(),
+                taskJson
             );
     }
 }

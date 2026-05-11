@@ -238,34 +238,45 @@ public class ChatAIServiceImpl implements ChatAIService {
             ═══════════════════════════════════════════════════
             THÔNG TIN THỜI GIAN HIỆN TẠI (RẤT QUAN TRỌNG)
             ═══════════════════════════════════════════════════
-            HÔM NAY = %s (%s)
-            Giờ hiện tại: %s
+            HÔM NAY = %s
+            Giờ hiện tại: %s — %s
 
             Tuần này: %s → %s
             Tuần trước: %s → %s
             Tháng trước: %s → %s
             ═══════════════════════════════════════════════════
 
-            QUY TẮC SO SÁNH (BẮT BUỘC):
-            - "Hôm nay" = %s (ví dụ: 29/04/2026)
-            - "Ngày mai" = %s (ví dụ: 30/04/2026) ← KHÔNG PHẢI %s!
-            - "Hôm qua" = %s
-            - "Chiều nay" = %s, 12:00-18:00
-            - "Sáng nay" = %s, 00:00-12:00 (hiện tại: %s)
-            - "Trong tuần này" = %s → %s
-            - "Tuần trước" = %s → %s (không có task → [])
-            - "Tháng trước" = %s → %s (không có task → [])
-            - "Vào lúc XhY" = tìm task deadline gần nhất với XhY
+            QUY TẮC LỌC TASK THEO THỜI GIAN (BẮT BUỘC):
+            - deadline trong data đã ở giờ Việt Nam (format: "dd/MM/yyyy HH:mm")
+            - So sánh phần "dd/MM/yyyy" với ngày trong bảng trên
+
+            | User hỏi    | Cách lọc deadline                    |
+            |-------------|--------------------------------------|
+            | Hôm nay     | deadline bắt đầu bằng "%s"           |
+            | Ngày mai    | deadline bắt đầu bằng "%s"           |
+            | Hôm qua     | deadline bắt đầu bằng "%s"           |
+            | Tuần này    | %s → %s |
+            | Tuần trước | %s → %s |
+            | Tháng trước| %s → %s |
+
+            VÍ DỤ: Nếu HÔM NAY = 11/05/2026:
+            - "Task hôm nay" → deadline chứa "11/05/2026"
+            - "Task tuần này" → deadline chứa "05/05/2026" HOẶC "06" HOẶC "07" HOẶC "08" HOẶC "09" HOẶC "10" HOẶC "11"
+            - "Task tuần trước" → deadline chứa "04/05/2026" HOẶC "03" HOẶC "02" HOẶC "01" HOẶC "30/04" HOẶC "29/04"...
+
+            TUYỆT ĐỐI QUAN TRỌNG:
+            - KHÔNG liệt kê task nào nếu deadline không thuộc khoảng thời gian user hỏi
+            - Nếu lọc ra 0 task → message = "Không có task nào trong [khoảng thời gian user hỏi]."
+            - summary.totalTasks LUÔN dùng trực tiếp từ data gốc
             ═══════════════════════════════════════════════════
             """.formatted(
-                formatted, today, currentTime,
+                formatted, currentTime, timeOfDay,
                 startOfWeekStr, endOfWeekStr,
                 lastWeekStartStr, lastWeekEndStr,
                 lastMonthStartStr, lastMonthEndStr,
-                today,
-                tomorrow, today,    // ngày mai ≠ hôm nay
-                yesterday,
-                today, today, currentTime,
+                today,              // hôm nay (ví dụ: 11/05/2026)
+                tomorrow,           // ngày mai
+                yesterday,          // hôm qua
                 startOfWeekStr, endOfWeekStr,
                 lastWeekStartStr, lastWeekEndStr,
                 lastMonthStartStr, lastMonthEndStr
