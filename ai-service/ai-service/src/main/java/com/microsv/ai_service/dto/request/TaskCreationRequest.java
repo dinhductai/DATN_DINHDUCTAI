@@ -1,9 +1,9 @@
-package com.microsv.task_service.dto.request;
+package com.microsv.ai_service.dto.request;
 
-import com.microsv.task_service.enumeration.PriorityLevel;
-import com.microsv.task_service.enumeration.TaskStatus;
-import java.time.OffsetDateTime;
+import com.microsv.ai_service.enumeration.TaskStatus;
 import lombok.Data;
+
+import java.time.OffsetDateTime;
 
 @Data
 public class TaskCreationRequest {
@@ -11,8 +11,8 @@ public class TaskCreationRequest {
     private String description;
     private OffsetDateTime startTime;
     private OffsetDateTime deadline;
-    private PriorityLevel priority;
-    private TaskStatus status;
+    private String priority; // "HIGH", "MEDIUM", "LOW"
+    private TaskStatus status; // TODO, IN_PROGRESS, DONE
 
     private Boolean isEvent;
     private EventCreationRequest eventCreationRequest;

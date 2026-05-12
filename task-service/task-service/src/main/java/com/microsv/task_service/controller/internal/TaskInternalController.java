@@ -1,5 +1,6 @@
 package com.microsv.task_service.controller.internal;
 
+import com.microsv.task_service.dto.request.TaskCreationRequest;
 import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.TaskResponse;
 import com.microsv.task_service.enumeration.PriorityLevel;
@@ -10,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,6 +52,18 @@ public class TaskInternalController {
     public ResponseEntity<Void> refreshTaskCache(@RequestHeader("userId") Long userId) {
         taskService.syncTasksToCache(userId);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Tạo task/event mới từ AI service.
+     * Không yêu cầu auth vì đây là internal endpoint cho ai-service.
+     */
+    @PostMapping("/ai/create")
+    public ResponseEntity<TaskResponse> createTaskByAI(
+            @RequestHeader("userId") Long userId,
+            @RequestBody TaskCreationRequest request) {
+        TaskResponse response = taskService.createTask(request, userId);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/filter")

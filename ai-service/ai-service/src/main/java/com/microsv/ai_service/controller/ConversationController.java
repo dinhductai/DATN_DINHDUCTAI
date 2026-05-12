@@ -4,11 +4,13 @@ import com.microsv.ai_service.dto.response.AIRichResponse;
 import com.microsv.ai_service.dto.response.ChatAIConversationResponse;
 import com.microsv.ai_service.dto.response.Mode1ChatResponse;
 import com.microsv.ai_service.dto.response.Mode2ChatResponse;
+import com.microsv.ai_service.dto.response.Mode3ChatResponse;
 import com.microsv.ai_service.entity.ConversationMemory;
 import com.microsv.ai_service.service.impl.ChatAIServiceImpl;
 import com.microsv.ai_service.service.impl.ChatMemoryServiceImpl;
 import com.microsv.ai_service.service.impl.Mode1ChatServiceImpl;
 import com.microsv.ai_service.service.impl.Mode2ChatServiceImpl;
+import com.microsv.ai_service.service.impl.Mode3ChatServiceImpl;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -32,6 +34,7 @@ public class ConversationController {
     ChatAIServiceImpl chatAIService;
     Mode1ChatServiceImpl mode1ChatService;
     Mode2ChatServiceImpl mode2ChatService;
+    Mode3ChatServiceImpl mode3ChatService;
 
     /**
      * Mode 1 chat — thống kê & hỏi đáp về lịch trình.
@@ -74,6 +77,28 @@ public class ConversationController {
         }
 
         Mode2ChatResponse response = mode2ChatService.chat(message, conversationId, userId);
+        response.setConversationId(conversationId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Mode 3 chat — tạo mới task/sự kiện.
+     * conversationId format: "3_<uuid>" — mode + underscore + uuid.
+     * AI trích xuất thông tin từ tin nhắn user, gọi API tạo task/event.
+     */
+    @PostMapping("/mode/3")
+    public ResponseEntity<Mode3ChatResponse> chatMode3(
+            @RequestParam(value = "message", required = false) String message,
+            @RequestParam(value = "conversationId", required = false) String conversationId,
+            @RequestParam(value = "mode", defaultValue = "3") Integer mode,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+
+        if (conversationId == null || conversationId.isBlank()) {
+            conversationId = Mode3ChatServiceImpl.CONVERSATION_ID_PREFIX + UUID.randomUUID().toString();
+        }
+
+        Mode3ChatResponse response = mode3ChatService.chat(message, conversationId, userId);
         response.setConversationId(conversationId);
         return ResponseEntity.ok(response);
     }

@@ -31,7 +31,7 @@ public class TaskMapper {
                 .deadline(request.getDeadline())
                 .startTime(request.getStartTime())
                 .priority(request.getPriority() != null ? request.getPriority() : PriorityLevel.MEDIUM)
-                .status(TaskStatus.TODO)
+                .status(request.getStatus() != null ? request.getStatus() : TaskStatus.TODO)
                 .userId(userId)
                 .build();
     }
