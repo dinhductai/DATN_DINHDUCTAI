@@ -16,6 +16,7 @@ public class Mode2ChatResponse {
     private String message;
     private String conversationId;
     private List<ScheduledItem> schedule;
+    private List<String> advice;
     private boolean canApply;
 
     @Data
