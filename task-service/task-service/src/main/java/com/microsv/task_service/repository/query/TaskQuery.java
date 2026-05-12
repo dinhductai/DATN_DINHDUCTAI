@@ -46,7 +46,8 @@ public class TaskQuery {
                     "WHERE \n" +
                     "   t.user_id = :userId\n" +
                     "   AND t.deadline IS NOT NULL\n" +
-                    "   AND DATE_TRUNC('week', t.deadline AT TIME ZONE 'Asia/Bangkok') = DATE_TRUNC('week', NOW() AT TIME ZONE 'Asia/Bangkok')";
+                    "   AND DATE_TRUNC('day', t.deadline AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM t.deadline AT TIME ZONE 'Asia/Bangkok') + 6) % 7)\n" +
+                    "       = DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM NOW() AT TIME ZONE 'Asia/Bangkok') + 6) % 7)";
 
     public static final String GET_WEEKLY_TASK_STATUS_RATE =
             "SELECT \n" +
@@ -57,19 +58,20 @@ public class TaskQuery {
                     "WHERE \n" +
                     "    t.user_id = :userId\n" +
                     "    AND t.deadline IS NOT NULL\n" +
-                    "    AND DATE_TRUNC('week', t.deadline AT TIME ZONE 'Asia/Bangkok') = DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')";
+                    "    AND DATE_TRUNC('day', t.deadline AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM t.deadline AT TIME ZONE 'Asia/Bangkok') + 6) % 7)\n" +
+                    "        = DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7)";
 
     public static final String GET_WEEKLY_TASK_DISTRIBUTION =
             "WITH current_week AS (\n" +
                     "        SELECT \n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') AS week_start,\n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + INTERVAL '7 days' AS week_end\n" +
+                    "            (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date AS week_start,\n" +
+                    "            (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7) + INTERVAL '7 days')::date AS week_end\n" +
                     "    ),\n" +
                     "    days AS (\n" +
                     "        SELECT \n" +
                     "            generate_series(\n" +
-                    "                (SELECT week_start FROM current_week),\n" +
-                    "                (SELECT week_end FROM current_week) - INTERVAL '1 day',\n" +
+                    "                (SELECT week_start FROM current_week)::date,\n" +
+                    "                (SELECT week_end FROM current_week)::date - INTERVAL '1 day',\n" +
                     "                '1 day'\n" +
                     "            )::date AS day_date\n" +
                     "    )\n" +
@@ -84,21 +86,24 @@ public class TaskQuery {
                     "    ORDER BY d.day_date;";
 
     public static final String GET_TASK_CREATION_TIMELINE =
-            "WITH week_series AS (\n" +
-                    "    SELECT \n" +
-                    "        generate_series(\n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '5 weeks',\n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok'),\n" +
-                    "            '1 week'::interval\n" +
-                    "        ) AS week_start\n" +
-                    "), \n" +
-                    "task_weeks AS (\n" +
-                    "    SELECT \n" +
-                    "        DATE_TRUNC('week', start_time AT TIME ZONE 'Asia/Bangkok') AS week_start,\n" +
-                    "        COUNT(*) AS task_count\n" +
-                    "    FROM tasks\n" +
-                    "    WHERE user_id = :userId\n" +
-                    "    GROUP BY DATE_TRUNC('week', start_time AT TIME ZONE 'Asia/Bangkok')\n" +
+            "WITH monday_week AS (\n" +
+                    "        SELECT (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7)) AS week_monday\n" +
+                    "    ),\n" +
+                    "    week_series AS (\n" +
+                    "        SELECT \n" +
+                    "            generate_series(\n" +
+                    "                (SELECT week_monday - INTERVAL '5 weeks' FROM monday_week),\n" +
+                    "                (SELECT week_monday FROM monday_week),\n" +
+                    "                '1 week'::interval\n" +
+                    "            ) AS week_start\n" +
+                    "    ), \n" +
+                    "    task_weeks AS (\n" +
+                    "        SELECT \n" +
+                    "            (DATE_TRUNC('day', start_time AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM start_time AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date AS week_start,\n" +
+                    "            COUNT(*) AS task_count\n" +
+                    "        FROM tasks\n" +
+                    "        WHERE user_id = :userId\n" +
+                    "        GROUP BY 1\n" +
                     ")\n" +
                     "SELECT \n" +
                     "    TO_CHAR(ws.week_start, 'YYYY-\"W\"IW') AS week_label,\n" +
@@ -109,28 +114,35 @@ public class TaskQuery {
 
     public static final String COUNT_ACTIVE_USERS_THIS_WEEK =
             "SELECT COUNT(DISTINCT t.user_id) FROM tasks t " +
-                    "WHERE DATE_TRUNC('week', t.start_time) = DATE_TRUNC('week', CURRENT_DATE)";
+                    "WHERE (DATE_TRUNC('day', t.start_time AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM t.start_time AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date " +
+                    "= (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date";
 
     public static final String COUNT_TASKS_CREATED_THIS_WEEK =
             "SELECT COUNT(*) FROM tasks t " +
-                    "WHERE DATE_TRUNC('week', t.start_time) = DATE_TRUNC('week', CURRENT_DATE)";
+                    "WHERE (DATE_TRUNC('day', t.start_time AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM t.start_time AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date " +
+                    "= (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date";
 
     public static final String GET_COMPLETED_TASKS_BY_DAY_THIS_WEEK =
-            "WITH days AS (\n" +
-                    "    SELECT generate_series(\n" +
-                    "        DATE_TRUNC('week', CURRENT_DATE),\n" +
-                    "        DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '6 days',\n" +
-                    "        '1 day'::interval\n" +
-                    "    )::date AS day_date\n" +
-                    ")\n" +
+            "WITH monday_week AS (\n" +
+                    "        SELECT (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date AS week_monday\n" +
+                    "    ),\n" +
+                    "    days AS (\n" +
+                    "        SELECT \n" +
+                    "            generate_series(\n" +
+                    "                (SELECT week_monday FROM monday_week),\n" +
+                    "                (SELECT week_monday FROM monday_week) + INTERVAL '6 days',\n" +
+                    "                '1 day'::interval\n" +
+                    "            )::date AS day_date\n" +
+                    "    )\n" +
                     "SELECT \n" +
                     "    TO_CHAR(d.day_date, 'Dy') AS day_name,\n" +
                     "    COUNT(t.task_id) AS completed_count\n" +
                     "FROM days d\n" +
                     "LEFT JOIN tasks t \n" +
-                    "    ON DATE(t.completed_at) = d.day_date\n" +
+                    "    ON (t.completed_at AT TIME ZONE 'Asia/Bangkok')::date = d.day_date\n" +
                     "    AND t.status = 'DONE'\n" +
-                    "    AND DATE_TRUNC('week', t.completed_at) = DATE_TRUNC('week', CURRENT_DATE)\n" +
+                    "    AND (DATE_TRUNC('day', t.completed_at AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM t.completed_at AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date\n" +
+                    "        = (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date\n" +
                     "GROUP BY d.day_date\n" +
                     "ORDER BY d.day_date;";
 
@@ -139,6 +151,8 @@ public class TaskQuery {
                     "    t.priority AS priority_level,\n" +
                     "    COUNT(*) AS task_count\n" +
                     "FROM tasks t\n" +
+                    "WHERE (DATE_TRUNC('day', t.start_time AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM t.start_time AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date " +
+                    "= (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date\n" +
                     "GROUP BY t.priority\n" +
                     "ORDER BY \n" +
                     "    CASE t.priority\n" +

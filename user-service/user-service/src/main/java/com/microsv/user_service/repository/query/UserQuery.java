@@ -3,7 +3,8 @@ package com.microsv.user_service.repository.query;
 public class UserQuery {
     public static final String COUNT_ALL_NEW_USERS_THIS_WEEK =
             "SELECT COUNT(*) FROM users " +
-                    "WHERE DATE_TRUNC('week', created_at) = DATE_TRUNC('week', CURRENT_DATE)";
+                    "WHERE (DATE_TRUNC('day', created_at AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM created_at AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date " +
+                    "= (DATE_TRUNC('day', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date";
 
     public static final String SEARCH_USER_BY_NAME_OR_EMAIL =
             "SELECT " +

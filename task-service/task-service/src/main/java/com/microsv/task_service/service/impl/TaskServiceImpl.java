@@ -713,7 +713,7 @@ public class TaskServiceImpl implements TaskService {
         }
 
         // Generate last 12 months from current month going backwards
-        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Bangkok"));
         java.util.List<MonthlyEventCountResponse> result = new java.util.ArrayList<>();
         java.time.format.DateTimeFormatter paddedMonth = java.time.format.DateTimeFormatter.ofPattern("MM");
         java.time.format.DateTimeFormatter viFormatter = java.time.format.DateTimeFormatter.ofPattern("'Thg 'M", java.util.Locale.forLanguageTag("vi"));
