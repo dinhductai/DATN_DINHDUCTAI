@@ -44,6 +44,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -541,8 +542,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public List<RecentTaskResponse> getRecentTasks(Long userId, Integer hours) {
-        OffsetDateTime since = OffsetDateTime.now().minusHours(hours != null ? hours : 48);
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime since = OffsetDateTime.now(ZoneOffset.UTC).minusHours(hours != null ? hours : 48);
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         List<Task> tasks = taskRepository.findRecentTasksByUserId(userId, since, now);
         return tasks.stream()
                 .map(t -> RecentTaskResponse.builder()

@@ -58,13 +58,13 @@ public class TaskQuery {
                     "WHERE \n" +
                     "    t.user_id = :userId\n" +
                     "    AND t.deadline IS NOT NULL\n" +
-                    "    AND DATE_TRUNC('week', t.deadline) = DATE_TRUNC('week', CURRENT_DATE)";
+                    "    AND DATE_TRUNC('week', t.deadline AT TIME ZONE 'Asia/Bangkok') = DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')";
 
     public static final String GET_WEEKLY_TASK_DISTRIBUTION =
             "WITH current_week AS (\n" +
                     "        SELECT \n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE) AS week_start,\n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days' AS week_end\n" +
+                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') AS week_start,\n" +
+                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + INTERVAL '7 days' AS week_end\n" +
                     "    ),\n" +
                     "    days AS (\n" +
                     "        SELECT \n" +
@@ -80,7 +80,7 @@ public class TaskQuery {
                     "    FROM days d\n" +
                     "    LEFT JOIN tasks t \n" +
                     "        ON t.user_id = :userId\n" +
-                    "        AND t.start_time::date = d.day_date\n" +
+                    "        AND (t.start_time AT TIME ZONE 'Asia/Bangkok')::date = d.day_date\n" +
                     "    GROUP BY d.day_date\n" +
                     "    ORDER BY d.day_date;";
 
@@ -88,18 +88,18 @@ public class TaskQuery {
             "WITH week_series AS (\n" +
                     "    SELECT \n" +
                     "        generate_series(\n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '5 weeks',\n" +
-                    "            DATE_TRUNC('week', CURRENT_DATE),\n" +
+                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '5 weeks',\n" +
+                    "            DATE_TRUNC('week', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok'),\n" +
                     "            '1 week'::interval\n" +
                     "        ) AS week_start\n" +
                     "), \n" +
                     "task_weeks AS (\n" +
                     "    SELECT \n" +
-                    "        DATE_TRUNC('week', start_time) AS week_start,\n" +
+                    "        DATE_TRUNC('week', start_time AT TIME ZONE 'Asia/Bangkok') AS week_start,\n" +
                     "        COUNT(*) AS task_count\n" +
                     "    FROM tasks\n" +
                     "    WHERE user_id = :userId\n" +
-                    "    GROUP BY DATE_TRUNC('week', start_time)\n" +
+                    "    GROUP BY DATE_TRUNC('week', start_time AT TIME ZONE 'Asia/Bangkok')\n" +
                     ")\n" +
                     "SELECT \n" +
                     "    TO_CHAR(ws.week_start, 'YYYY-\"W\"IW') AS week_label,\n" +
@@ -151,12 +151,12 @@ public class TaskQuery {
     public static final String COUNT_TASKS_THIS_MONTH =
             "SELECT COUNT(*)\n" +
                     "FROM tasks t\n" +
-                    "WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE)\n" +
-                    "AND t.start_time < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'";
+                    "WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')\n" +
+                    "AND t.start_time < DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + INTERVAL '1 month'";
 
     public static final String COUNT_TASKS_LAST_MONTH =
             "SELECT COUNT(*)\n" +
                     "FROM tasks t\n" +
-                    "WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'\n" +
-                    "AND t.start_time < DATE_TRUNC('month', CURRENT_DATE)";
+                    "WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 month'\n" +
+                    "AND t.start_time < DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')";
 }

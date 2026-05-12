@@ -93,18 +93,18 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Count events by month for last 12 months
     @Query(value = """
         SELECT
-            LPAD(EXTRACT(MONTH FROM t.start_time)::TEXT, 2, '0') AS month,
-            EXTRACT(YEAR FROM t.start_time) AS year,
+            LPAD(EXTRACT(MONTH FROM t.start_time AT TIME ZONE 'Asia/Bangkok')::TEXT, 2, '0') AS month,
+            EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok') AS year,
             COUNT(e.event_id) AS eventCount
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
-        WHERE t.start_time >= CURRENT_DATE - INTERVAL '12 months'
+        WHERE t.start_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '12 months'
         GROUP BY
-            EXTRACT(YEAR FROM t.start_time),
-            LPAD(EXTRACT(MONTH FROM t.start_time)::TEXT, 2, '0')
+            EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok'),
+            LPAD(EXTRACT(MONTH FROM t.start_time AT TIME ZONE 'Asia/Bangkok')::TEXT, 2, '0')
         ORDER BY
-            EXTRACT(YEAR FROM t.start_time),
-            LPAD(EXTRACT(MONTH FROM t.start_time)::TEXT, 2, '0')
+            EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok'),
+            LPAD(EXTRACT(MONTH FROM t.start_time AT TIME ZONE 'Asia/Bangkok')::TEXT, 2, '0')
         """, nativeQuery = true)
     List<Tuple> countEventsByMonth();
 
@@ -113,8 +113,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         SELECT COUNT(e.event_id)
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
-        WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE)
-        AND t.start_time < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+        WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')
+        AND t.start_time < DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') + INTERVAL '1 month'
         """, nativeQuery = true)
     Long countEventsThisMonth();
 
@@ -123,8 +123,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         SELECT COUNT(e.event_id)
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
-        WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
-        AND t.start_time < DATE_TRUNC('month', CURRENT_DATE)
+        WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 month'
+        AND t.start_time < DATE_TRUNC('month', CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')
         """, nativeQuery = true)
     Long countEventsLastMonth();
 }

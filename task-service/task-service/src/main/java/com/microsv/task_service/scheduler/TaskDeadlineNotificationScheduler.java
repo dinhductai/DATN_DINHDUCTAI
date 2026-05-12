@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +39,7 @@ public class TaskDeadlineNotificationScheduler {
     // Chạy mỗi 1 phút để kiểm tra task bắt đầu
     @Scheduled(fixedRate = 60000)
     public void checkAndNotifyTaskDeadlines() {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         
         // Tìm task có startTime trong khoảng 1 phút trước đến hiện tại
         OffsetDateTime oneMinuteAgo = now.minusMinutes(1);
