@@ -6,6 +6,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -24,13 +27,21 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllNotifications(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Map<String, Object>> getAllNotifications(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         Long userId = Long.parseLong(jwt.getSubject());
-        List<NotificationResponse> notifications = notificationService.getAllNotifications(userId);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<NotificationResponse> notificationPage = notificationService.getNotifications(userId, pageable);
         Long unreadCount = notificationService.getUnreadCount(userId);
         return ResponseEntity.ok(Map.of(
-                "notifications", notifications,
-                "unreadCount", unreadCount
+                "notifications", notificationPage.getContent(),
+                "unreadCount", unreadCount,
+                "totalElements", notificationPage.getTotalElements(),
+                "totalPages", notificationPage.getTotalPages(),
+                "currentPage", notificationPage.getNumber(),
+                "pageSize", notificationPage.getSize()
         ));
     }
 

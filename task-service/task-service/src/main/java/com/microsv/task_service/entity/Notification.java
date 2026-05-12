@@ -11,7 +11,10 @@ import java.time.OffsetDateTime;
 
 @Data
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", indexes = {
+    @Index(name = "idx_notifications_user_id", columnList = "user_id"),
+    @Index(name = "idx_notifications_created_at", columnList = "created_at")
+})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

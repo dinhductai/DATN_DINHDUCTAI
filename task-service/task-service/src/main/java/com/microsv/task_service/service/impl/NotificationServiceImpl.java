@@ -10,6 +10,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +66,18 @@ public class NotificationServiceImpl implements NotificationService {
         List<Notification> unread = notificationRepository.findAllByUserIdAndIsReadOrderByCreatedAtDesc(userId, false);
         unread.forEach(n -> n.setIsRead(true));
         notificationRepository.saveAll(unread);
+    }
+
+    @Override
+    public Page<NotificationResponse> getNotifications(Long userId, Pageable pageable) {
+        return notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable)
+                .map(this::toResponse);
+    }
+
+    @Override
+    public Page<NotificationResponse> getUnreadNotifications(Long userId, Pageable pageable) {
+        return notificationRepository.findAllByUserIdAndIsReadOrderByCreatedAtDesc(userId, false, pageable)
+                .map(this::toResponse);
     }
 
     private NotificationResponse toResponse(Notification notification) {

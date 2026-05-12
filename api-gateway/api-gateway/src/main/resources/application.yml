@@ -61,6 +61,12 @@ spring:
             - Path=/api/v1/notifications/**
           filters:
             - RewritePath=/api/v1/notifications/(?<segment>.*), /api/notifications/${segment}
+        - id: task-service-notifications-v1-compat-route
+          uri: lb://task-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - RewritePath=/api/notifications/(?<segment>.*), /api/notifications/${segment}
         - id: ai-service-route
           uri: lb://ai-service
           predicates:
