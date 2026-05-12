@@ -33,7 +33,7 @@ public class DailyTaskNotificationService {
     private final TaskNotificationProducer taskNotificationProducer;
     private final NotificationRepository notificationRepository;
 
-    // @Scheduled(cron = "0 55 4 * * *", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 0 7 * * *", zone = "Asia/Ho_Chi_Minh")
     public void sendDailyTaskNotifications() {
         log.info("Starting daily task notification job");
 
