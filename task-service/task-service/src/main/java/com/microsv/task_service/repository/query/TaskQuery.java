@@ -96,7 +96,7 @@ public class TaskQuery {
                     "                (SELECT week_monday FROM monday_week),\n" +
                     "                '1 week'::interval\n" +
                     "            ) AS week_start\n" +
-                    "    ), \n" +
+                    "    ),\n" +
                     "    task_weeks AS (\n" +
                     "        SELECT \n" +
                     "            (DATE_TRUNC('day', start_time AT TIME ZONE 'Asia/Bangkok') - INTERVAL '1 day' * ((EXTRACT(DOW FROM start_time AT TIME ZONE 'Asia/Bangkok') + 6) % 7))::date AS week_start,\n" +
@@ -106,7 +106,13 @@ public class TaskQuery {
                     "        GROUP BY 1\n" +
                     ")\n" +
                     "SELECT \n" +
-                    "    TO_CHAR(ws.week_start, 'YYYY-\"W\"IW') AS week_label,\n" +
+                    "    TO_CHAR(ws.week_start, 'dd') || '-' ||\n" +
+                    "    TO_CHAR(ws.week_start + INTERVAL '6 days',\n" +
+                    "        CASE\n" +
+                    "            WHEN TO_CHAR(ws.week_start, 'mm') = TO_CHAR(ws.week_start + INTERVAL '6 days', 'mm')\n" +
+                    "            THEN 'dd' ELSE 'dd/mm'\n" +
+                    "        END\n" +
+                    "    ) AS week_label,\n" +
                     "    COALESCE(tw.task_count, 0) AS task_count\n" +
                     "FROM week_series ws\n" +
                     "LEFT JOIN task_weeks tw ON ws.week_start = tw.week_start\n" +
