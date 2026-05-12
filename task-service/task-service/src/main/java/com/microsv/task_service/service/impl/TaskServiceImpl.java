@@ -27,6 +27,7 @@ import com.microsv.task_service.mapper.TaskMapper;
 import com.microsv.task_service.messaging.EventEmailProducer;
 import com.microsv.task_service.repository.EventRepository;
 import com.microsv.task_service.repository.TaskRepository;
+import com.microsv.task_service.feign.UserClient;
 import com.microsv.task_service.service.TaskService;
 import com.microsv.task_service.service.ClaudeTaskConvertService;
 import com.microsv.task_service.service.TaskCacheService;
@@ -46,8 +47,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
@@ -68,6 +71,7 @@ public class TaskServiceImpl implements TaskService {
     TaskCacheService taskCacheService;
     ClaudeTaskConvertService claudeTaskConvertService;
     EventReminderRedisService eventReminderRedisService;
+    UserClient userClient;
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -564,14 +568,60 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Long countPersonalEventsInCurrentYear(Long userId) {
-        Long count = eventRepository.countPersonalEventsInCurrentYear(userId);
-        return count != null ? count : 0L;
+        String userEmail = userClient.getUserEmail(userId);
+        if (userEmail == null || userEmail.isBlank()) return 0L;
+
+        List<Tuple> eventEmails = eventRepository.findEventEmailsInCurrentYear(userId);
+        long personalCount = 0L;
+
+        for (Tuple tuple : eventEmails) {
+            String invitedEmailsJson = tuple.get("invitedEmails", String.class);
+            if (invitedEmailsJson == null || invitedEmailsJson.isBlank() || invitedEmailsJson.equals("[]")) {
+                // No invited emails = personal event
+                personalCount++;
+                continue;
+            }
+
+            // Parse JSON array and check if count == 1 and email matches user
+            try {
+                List<String> emails = objectMapper.readValue(invitedEmailsJson, new TypeReference<List<String>>() {});
+                if (emails.size() == 1 && emails.get(0).equalsIgnoreCase(userEmail.trim())) {
+                    personalCount++;
+                }
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to parse invited_emails JSON for personal check: {}", invitedEmailsJson);
+            }
+        }
+        return personalCount;
     }
 
     @Override
     public Long countGroupEventsInCurrentYear(Long userId) {
-        Long count = eventRepository.countGroupEventsInCurrentYear(userId);
-        return count != null ? count : 0L;
+        String userEmail = userClient.getUserEmail(userId);
+        if (userEmail == null || userEmail.isBlank()) return 0L;
+
+        List<Tuple> eventEmails = eventRepository.findEventEmailsInCurrentYear(userId);
+        long groupCount = 0L;
+
+        for (Tuple tuple : eventEmails) {
+            String invitedEmailsJson = tuple.get("invitedEmails", String.class);
+            if (invitedEmailsJson == null || invitedEmailsJson.isBlank() || invitedEmailsJson.equals("[]")) {
+                continue; // No invited emails = personal, skip
+            }
+
+            try {
+                List<String> emails = objectMapper.readValue(invitedEmailsJson, new TypeReference<List<String>>() {});
+                // Group event: count > 1, OR count == 1 but email differs from user
+                if (emails.size() > 1) {
+                    groupCount++;
+                } else if (emails.size() == 1 && !emails.get(0).equalsIgnoreCase(userEmail.trim())) {
+                    groupCount++;
+                }
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to parse invited_emails JSON for group check: {}", invitedEmailsJson);
+            }
+        }
+        return groupCount;
     }
 
     @Override

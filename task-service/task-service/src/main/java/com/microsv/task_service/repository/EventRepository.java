@@ -62,6 +62,16 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         """, nativeQuery = true)
     List<Tuple> countEventsByPriorityInCurrentYear(@Param("userId") Long userId);
 
+    // Get event IDs with invited emails for current year (for personal/group classification)
+    @Query(value = """
+        SELECT e.event_id as eventId, e.invited_emails as invitedEmails
+        FROM events e
+        JOIN tasks t ON e.task_id = t.task_id
+        WHERE t.user_id = :userId
+        AND EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok') = EXTRACT(YEAR FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')
+        """, nativeQuery = true)
+    List<Tuple> findEventEmailsInCurrentYear(@Param("userId") Long userId);
+
     // Get upcoming events for user (future events sorted by start_time ASC, VN timezone)
     @Query(value = """
         SELECT e.event_id as eventId, e.task_id as taskId, e.event_description as eventDescription,
