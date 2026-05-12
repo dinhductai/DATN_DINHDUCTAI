@@ -202,7 +202,16 @@ public class Mode3ChatServiceImpl implements Mode3ChatService {
         request.setTitle(item.getTitle());
         request.setStartTime(parseToOffsetDateTime(item.getStartTime()));
         request.setDeadline(parseToOffsetDateTime(item.getDeadline()));
-        request.setDescription(item.getDescription());
+        request.setDescription(item.getDescription() != null ? item.getDescription() : "không có");
+
+        if (item.getPriority() != null) {
+            try {
+                request.setPriority(item.getPriority().toUpperCase().trim());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid priority '{}', defaulting to MEDIUM", item.getPriority());
+                request.setPriority("MEDIUM");
+            }
+        }
 
         if (item.getStatus() != null) {
             try {
@@ -215,7 +224,7 @@ public class Mode3ChatServiceImpl implements Mode3ChatService {
 
         if (item.getCategory() != null) {
             request.setDescription(
-                    (item.getDescription() != null ? item.getDescription() + "\n" : "")
+                    (item.getDescription() != null ? item.getDescription() : "không có") + "\n"
                             + "[Danh mục: " + item.getCategory() + "]"
             );
         }
@@ -225,7 +234,7 @@ public class Mode3ChatServiceImpl implements Mode3ChatService {
 
         if (isEvent) {
             EventCreationRequest eventReq = new EventCreationRequest();
-            eventReq.setEventDescription(item.getEventDescription());
+            eventReq.setEventDescription(item.getEventDescription() != null ? item.getEventDescription() : "không có");
             eventReq.setIsOnline(item.getIsOnline());
             eventReq.setLinkEvent(item.getLinkEvent());
             eventReq.setLocation(item.getLocation());

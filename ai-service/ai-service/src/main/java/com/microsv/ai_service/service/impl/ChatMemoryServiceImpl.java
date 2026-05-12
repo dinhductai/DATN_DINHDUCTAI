@@ -16,10 +16,13 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -33,6 +36,7 @@ import java.util.stream.Collectors;
 public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemoryService {
     private final ConversationMemoryRepository conversationMemoryRepository;
     private final TaskClient taskClient;
+    private final org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
 
     public static final String MODE1_PREFIX = "1_";
     public static final String MODE2_PREFIX = "2_";
@@ -190,6 +194,23 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
     }
 
     private Long getCurrentUserId() {
+        // Ưu tiên RequestContextHolder vì nó tồn tại suốt request lifecycle
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            HttpServletRequest request = attrs.getRequest();
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                try {
+                    Jwt jwt = jwtDecoder.decode(token);
+                    return Long.parseLong(jwt.getSubject());
+                } catch (Exception e) {
+                    log.warn("Failed to decode JWT in ChatMemory: {}", e.getMessage());
+                }
+            }
+        }
+
+        // Fallback: SecurityContextHolder (hoạt động trong main controller thread)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
