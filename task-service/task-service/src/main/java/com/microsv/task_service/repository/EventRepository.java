@@ -107,5 +107,25 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             LPAD(EXTRACT(MONTH FROM t.start_time)::TEXT, 2, '0')
         """, nativeQuery = true)
     List<Tuple> countEventsByMonth();
+
+    // Count events created in current month
+    @Query(value = """
+        SELECT COUNT(e.event_id)
+        FROM events e
+        JOIN tasks t ON e.task_id = t.task_id
+        WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE)
+        AND t.start_time < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+        """, nativeQuery = true)
+    Long countEventsThisMonth();
+
+    // Count events created in previous month
+    @Query(value = """
+        SELECT COUNT(e.event_id)
+        FROM events e
+        JOIN tasks t ON e.task_id = t.task_id
+        WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
+        AND t.start_time < DATE_TRUNC('month', CURRENT_DATE)
+        """, nativeQuery = true)
+    Long countEventsLastMonth();
 }
 

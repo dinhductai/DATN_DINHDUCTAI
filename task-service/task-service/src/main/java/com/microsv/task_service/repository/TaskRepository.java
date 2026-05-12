@@ -66,6 +66,12 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query(value = COUNT_TASKS_BY_PRIORITY, nativeQuery = true)
     List<Tuple> countTasksByPriority();
 
+    @Query(value = TaskQuery.COUNT_TASKS_THIS_MONTH, nativeQuery = true)
+    Long countTasksThisMonth();
+
+    @Query(value = TaskQuery.COUNT_TASKS_LAST_MONTH, nativeQuery = true)
+    Long countTasksLastMonth();
+
     List<Task> findByTitle(String title);
 
     @Query(value = """

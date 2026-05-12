@@ -8,6 +8,7 @@ import com.microsv.common.exception.BaseException;
 import com.microsv.task_service.dto.message.EventCreationMessage;
 import com.microsv.task_service.dto.message.EventReminderMessage;
 import com.microsv.task_service.dto.message.EventUpdateMessage;
+import com.microsv.task_service.dto.response.MonthlyCreationResponse;
 import com.microsv.task_service.dto.request.EventCreationRequest;
 import com.microsv.task_service.dto.request.EventUpdateRequest;
 import com.microsv.task_service.dto.request.TaskCreationRequest;
@@ -678,6 +679,37 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return result;
+    }
+
+    @Override
+    public MonthlyCreationResponse getMonthlyCreationStats() {
+        Long thisMonthEvents = eventRepository.countEventsThisMonth();
+        Long thisMonthTasks = taskRepository.countTasksThisMonth();
+        Long lastMonthEvents = eventRepository.countEventsLastMonth();
+        Long lastMonthTasks = taskRepository.countTasksLastMonth();
+
+        double eventsChange = 0.0;
+        if (lastMonthEvents != null && lastMonthEvents > 0) {
+            eventsChange = ((double) (thisMonthEvents - lastMonthEvents) / lastMonthEvents) * 100;
+        } else if (thisMonthEvents > 0) {
+            eventsChange = 100.0;
+        }
+
+        double tasksChange = 0.0;
+        if (lastMonthTasks != null && lastMonthTasks > 0) {
+            tasksChange = ((double) (thisMonthTasks - lastMonthTasks) / lastMonthTasks) * 100;
+        } else if (thisMonthTasks > 0) {
+            tasksChange = 100.0;
+        }
+
+        return MonthlyCreationResponse.builder()
+                .thisMonthEvents(thisMonthEvents != null ? thisMonthEvents : 0L)
+                .thisMonthTasks(thisMonthTasks != null ? thisMonthTasks : 0L)
+                .lastMonthEvents(lastMonthEvents != null ? lastMonthEvents : 0L)
+                .lastMonthTasks(lastMonthTasks != null ? lastMonthTasks : 0L)
+                .eventsChange(Math.round(eventsChange * 10.0) / 10.0)
+                .tasksChange(Math.round(tasksChange * 10.0) / 10.0)
+                .build();
     }
 
 }

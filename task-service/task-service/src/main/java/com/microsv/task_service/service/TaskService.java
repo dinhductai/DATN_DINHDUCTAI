@@ -46,5 +46,6 @@ public interface TaskService {
     java.util.List<EventResponse> getAllEventsByUser(Long userId);
     TaskResponse deleteEvent(Long taskId, Long eventId, Long userId);
     List<RecentTaskResponse> getRecentTasks(Long userId, Integer hours);
+    MonthlyCreationResponse getMonthlyCreationStats();
     List<MonthlyEventCountResponse> getEventCountsByMonth();
 }

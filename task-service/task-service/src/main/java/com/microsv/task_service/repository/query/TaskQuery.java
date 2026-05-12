@@ -147,4 +147,16 @@ public class TaskQuery {
                     "        WHEN 'MEDIUM' THEN 2\n" +
                     "        WHEN 'LOW' THEN 3\n" +
                     "    END;";
+
+    public static final String COUNT_TASKS_THIS_MONTH =
+            "SELECT COUNT(*)\n" +
+                    "FROM tasks t\n" +
+                    "WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE)\n" +
+                    "AND t.start_time < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'";
+
+    public static final String COUNT_TASKS_LAST_MONTH =
+            "SELECT COUNT(*)\n" +
+                    "FROM tasks t\n" +
+                    "WHERE t.start_time >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'\n" +
+                    "AND t.start_time < DATE_TRUNC('month', CURRENT_DATE)";
 }
