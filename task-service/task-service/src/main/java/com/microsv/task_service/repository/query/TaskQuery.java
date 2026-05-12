@@ -20,7 +20,7 @@ public class TaskQuery {
                     "WHERE t.user_id = :userId " +
                     "AND t.deadline IS NOT NULL " +
                     "AND DATE_TRUNC('day', t.deadline AT TIME ZONE 'Asia/Bangkok') = DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Bangkok') " +
-                    "AND t.deadline < NOW() " +
+                    "AND t.deadline AT TIME ZONE 'Asia/Bangkok' < NOW() AT TIME ZONE 'Asia/Bangkok' " +
                     "AND t.status <> 'DONE' " +
                     "ORDER BY t.deadline ASC";
 
@@ -30,8 +30,7 @@ public class TaskQuery {
                     "t.created_at AS createdAt, t.start_time AS startTime, t.completed_at AS completedAt, t.user_id AS userId " +
                     "FROM tasks t " +
                     "WHERE t.user_id = :userId " +
-                    "AND t.completed_at IS NOT NULL " +
-                    "AND DATE_TRUNC('day', t.completed_at AT TIME ZONE 'Asia/Bangkok') = DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Bangkok') " +
+                    "AND DATE_TRUNC('day', t.deadline AT TIME ZONE 'Asia/Bangkok') = DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Bangkok') " +
                     "AND t.status = 'DONE' " +
                     "ORDER BY t.completed_at ASC";
 
