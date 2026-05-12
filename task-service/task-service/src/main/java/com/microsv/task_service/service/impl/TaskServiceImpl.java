@@ -733,6 +733,37 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public List<MonthlyEventCountResponse> getEventCountsByMonthForUser(Long userId) {
+        List<Tuple> results = eventRepository.countEventsByMonthByUserId(userId);
+
+        Map<String, Long> countMap = new java.util.LinkedHashMap<>();
+        for (Tuple tuple : results) {
+            String month = tuple.get("month", String.class);
+            Long year = ((Number) tuple.get("year")).longValue();
+            Long count = ((Number) tuple.get("eventCount")).longValue();
+            countMap.put(year + "-" + month, count != null ? count : 0L);
+        }
+
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Bangkok"));
+        java.util.List<MonthlyEventCountResponse> result = new java.util.ArrayList<>();
+        java.time.format.DateTimeFormatter paddedMonth = java.time.format.DateTimeFormatter.ofPattern("MM");
+        java.time.format.DateTimeFormatter viFormatter = java.time.format.DateTimeFormatter.ofPattern("'Thg 'M", java.util.Locale.forLanguageTag("vi"));
+
+        for (int i = 11; i >= 0; i--) {
+            java.time.LocalDate monthDate = today.minusMonths(i);
+            String key = monthDate.getYear() + "-" + monthDate.format(paddedMonth);
+            String monthLabel = monthDate.format(viFormatter);
+            Long count = countMap.getOrDefault(key, 0L);
+            result.add(MonthlyEventCountResponse.builder()
+                    .month(monthLabel)
+                    .events(count)
+                    .build());
+        }
+
+        return result;
+    }
+
+    @Override
     public MonthlyCreationResponse getMonthlyCreationStats() {
         Long thisMonthEvents = eventRepository.countEventsThisMonth();
         Long thisMonthTasks = taskRepository.countTasksThisMonth();

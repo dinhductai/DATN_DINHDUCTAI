@@ -48,4 +48,5 @@ public interface TaskService {
     List<RecentTaskResponse> getRecentTasks(Long userId, Integer hours);
     MonthlyCreationResponse getMonthlyCreationStats();
     List<MonthlyEventCountResponse> getEventCountsByMonth();
+    List<MonthlyEventCountResponse> getEventCountsByMonthForUser(Long userId);
 }

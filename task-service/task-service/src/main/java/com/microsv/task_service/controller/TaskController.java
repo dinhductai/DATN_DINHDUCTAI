@@ -225,6 +225,13 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getEventCountsByMonth());
     }
 
+    @GetMapping("/events/statistics/monthly/personal")
+    public ResponseEntity<List<MonthlyEventCountResponse>> getEventCountsByMonthForUser(
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+        return ResponseEntity.ok(taskService.getEventCountsByMonthForUser(userId));
+    }
+
     @GetMapping("/statistics/monthly-creation")
     public ResponseEntity<MonthlyCreationResponse> getMonthlyCreationStats() {
         return ResponseEntity.ok(taskService.getMonthlyCreationStats());

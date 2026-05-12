@@ -122,6 +122,25 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         """, nativeQuery = true)
     List<Tuple> countEventsByMonth();
 
+    // Count events by month for last 12 months for a specific user
+    @Query(value = """
+        SELECT
+            LPAD(EXTRACT(MONTH FROM t.start_time AT TIME ZONE 'Asia/Bangkok')::TEXT, 2, '0') AS month,
+            EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok') AS year,
+            COUNT(e.event_id) AS eventCount
+        FROM events e
+        JOIN tasks t ON e.task_id = t.task_id
+        WHERE t.user_id = :userId
+        AND t.start_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Bangkok') - INTERVAL '12 months'
+        GROUP BY
+            EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok'),
+            LPAD(EXTRACT(MONTH FROM t.start_time AT TIME ZONE 'Asia/Bangkok')::TEXT, 2, '0')
+        ORDER BY
+            EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok'),
+            LPAD(EXTRACT(MONTH FROM t.start_time AT TIME ZONE 'Asia/Bangkok')::TEXT, 2, '0')
+        """, nativeQuery = true)
+    List<Tuple> countEventsByMonthByUserId(@Param("userId") Long userId);
+
     // Count events created in current month
     @Query(value = """
         SELECT COUNT(e.event_id)
