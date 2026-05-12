@@ -8,11 +8,13 @@ import com.microsv.user_service.dto.response.UserAuthResponse;
 import com.microsv.user_service.dto.response.UserProfileResponse;
 import com.microsv.user_service.dto.response.UserResponse;
 import com.microsv.user_service.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface UserService {
-    List<UserResponse> getAllUsers();
+    Page<UserResponse> getAllUsers(Pageable pageable);
     User getUserById(Long id);
     User createUser(User user);
     UserResponse createUser(UserCreationRequest request);

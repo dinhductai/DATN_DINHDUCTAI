@@ -3,6 +3,8 @@ package com.microsv.user_service.repository;
 import com.microsv.user_service.entity.User;
 import com.microsv.user_service.repository.query.UserQuery;
 import jakarta.persistence.Tuple;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,4 +27,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = UserQuery.SEARCH_USER_BY_NAME_OR_EMAIL,nativeQuery = true)
     List<Tuple> searchUsersByNameOrEmail(@Param("keyword") String keyword);
     List<User> searchUsersByUserName(String name);
+
+    Page<User> findByEmailNot(String email, Pageable pageable);
 }

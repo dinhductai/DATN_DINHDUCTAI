@@ -20,6 +20,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -45,15 +47,9 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public List<UserResponse> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        if (users.isEmpty()) {
-            throw new BaseException(ErrorCode.USER_NOT_FOUND);
-        }
-        return users.stream()
-                .filter(u -> !u.getEmail().equalsIgnoreCase("admin@gmail.com"))
-                .map(userMapper::toUserResponse)
-                .collect(Collectors.toList());
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> users = userRepository.findByEmailNot("admin@gmail.com", pageable);
+        return users.map(userMapper::toUserResponse);
     }
 
     @Override
