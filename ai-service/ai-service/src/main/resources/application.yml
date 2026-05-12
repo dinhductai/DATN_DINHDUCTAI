@@ -14,12 +14,16 @@ spring:
         time_zone: Asia/Ho_Chi_Minh
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY:}
+      api-key: ${SPRING_AI_OPENAI_API_KEY}
       chat:
         options:
           model: gpt-4o
           temperature: 0.7
           max-tokens: 4000
+
+claude:
+  api:
+    key: ${CLAUDE_API_KEY:}
 
 server:
   port: 9006

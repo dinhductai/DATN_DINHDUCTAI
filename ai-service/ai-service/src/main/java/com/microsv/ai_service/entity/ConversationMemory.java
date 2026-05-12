@@ -26,7 +26,7 @@ public class ConversationMemory {
     @Column(name = "role",nullable = false)
     private String role;
 
-    @Column(name = "content",length = 3000) //tăng kích thước lưu trữ câu tl của AI
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "create_at", columnDefinition = "timestamptz")

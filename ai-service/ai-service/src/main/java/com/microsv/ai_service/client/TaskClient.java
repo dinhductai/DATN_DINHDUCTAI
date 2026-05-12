@@ -4,11 +4,16 @@ import com.microsv.ai_service.dto.response.TaskResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @FeignClient(name = "task-service")
 public interface TaskClient {
@@ -31,4 +36,12 @@ public interface TaskClient {
     //lấy task JSON đã được convert từ Redis (task + event merged)
     @GetMapping(value = "/internal/tasks/ai/json")
     String getTasksJsonForAI(@RequestHeader("userId") Long userId);
+
+    //cập nhật task từ AI (chỉ startTime, deadline)
+    @PutMapping(value = "/internal/tasks/{taskId}/ai-update")
+    TaskResponse updateTaskByAI(
+            @PathVariable Long taskId,
+            @RequestHeader("userId") Long userId,
+            @RequestBody Map<String, Object> updates
+    );
 }

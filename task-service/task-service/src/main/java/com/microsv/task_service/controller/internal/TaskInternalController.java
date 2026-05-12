@@ -1,5 +1,6 @@
 package com.microsv.task_service.controller.internal;
 
+import com.microsv.task_service.dto.request.TaskUpdateRequest;
 import com.microsv.task_service.dto.response.TaskResponse;
 import com.microsv.task_service.enumeration.PriorityLevel;
 import com.microsv.task_service.enumeration.TaskStatus;
@@ -62,6 +63,20 @@ public class TaskInternalController {
     ) {
         List<TaskResponse> responses = taskService.getFilteredTasks(userId, status, priority, fromDate, toDate, limit);
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Cập nhật task từ AI service.
+     * Chỉ cho phép cập nhật startTime và deadline.
+     * Không yêu cầu auth vì đây là internal endpoint cho ai-service.
+     */
+    @PutMapping("/{taskId}/ai-update")
+    public ResponseEntity<TaskResponse> updateTaskByAI(
+            @PathVariable Long taskId,
+            @RequestHeader("userId") Long userId,
+            @RequestBody TaskUpdateRequest request) {
+        TaskResponse response = taskService.updateTask(taskId, request, userId);
+        return ResponseEntity.ok(response);
     }
 
 }

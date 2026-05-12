@@ -3,10 +3,12 @@ package com.microsv.ai_service.controller;
 import com.microsv.ai_service.dto.response.AIRichResponse;
 import com.microsv.ai_service.dto.response.ChatAIConversationResponse;
 import com.microsv.ai_service.dto.response.Mode1ChatResponse;
+import com.microsv.ai_service.dto.response.Mode2ChatResponse;
 import com.microsv.ai_service.entity.ConversationMemory;
 import com.microsv.ai_service.service.impl.ChatAIServiceImpl;
 import com.microsv.ai_service.service.impl.ChatMemoryServiceImpl;
 import com.microsv.ai_service.service.impl.Mode1ChatServiceImpl;
+import com.microsv.ai_service.service.impl.Mode2ChatServiceImpl;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -29,6 +31,7 @@ public class ConversationController {
     ChatMemoryServiceImpl chatMemoryService;
     ChatAIServiceImpl chatAIService;
     Mode1ChatServiceImpl mode1ChatService;
+    Mode2ChatServiceImpl mode2ChatService;
 
     /**
      * Mode 1 chat — thống kê & hỏi đáp về lịch trình.
@@ -49,6 +52,28 @@ public class ConversationController {
         }
 
         Mode1ChatResponse response = mode1ChatService.chat(message, conversationId, userId);
+        response.setConversationId(conversationId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Mode 2 chat — tư vấn sắp xếp lịch trình.
+     * conversationId format: "2_<uuid>" — mode + underscore + uuid.
+     * Nếu user nhắn "chỉnh sửa lại" → gọi Claude API để cập nhật task/event.
+     */
+    @PostMapping("/mode/2")
+    public ResponseEntity<Mode2ChatResponse> chatMode2(
+            @RequestParam(value = "message", required = false) String message,
+            @RequestParam(value = "conversationId", required = false) String conversationId,
+            @RequestParam(value = "mode", defaultValue = "2") Integer mode,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.parseLong(jwt.getSubject());
+
+        if (conversationId == null || conversationId.isBlank()) {
+            conversationId = Mode2ChatServiceImpl.CONVERSATION_ID_PREFIX + UUID.randomUUID().toString();
+        }
+
+        Mode2ChatResponse response = mode2ChatService.chat(message, conversationId, userId);
         response.setConversationId(conversationId);
         return ResponseEntity.ok(response);
     }
