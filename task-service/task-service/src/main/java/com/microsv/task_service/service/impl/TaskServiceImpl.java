@@ -557,30 +557,30 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Long countEventsInCurrentYear() {
-        Long total = eventRepository.countEventsInCurrentYear();
+    public Long countEventsInCurrentYear(Long userId) {
+        Long total = eventRepository.countEventsInCurrentYear(userId);
         return total != null ? total : 0L;
     }
 
     @Override
-    public Long countPersonalEventsInCurrentYear() {
-        Long count = eventRepository.countPersonalEventsInCurrentYear();
+    public Long countPersonalEventsInCurrentYear(Long userId) {
+        Long count = eventRepository.countPersonalEventsInCurrentYear(userId);
         return count != null ? count : 0L;
     }
 
     @Override
-    public Long countGroupEventsInCurrentYear() {
-        Long count = eventRepository.countGroupEventsInCurrentYear();
+    public Long countGroupEventsInCurrentYear(Long userId) {
+        Long count = eventRepository.countGroupEventsInCurrentYear(userId);
         return count != null ? count : 0L;
     }
 
     @Override
-    public List<EventResponse> countEventsByPriorityInCurrentYear() {
-        List<Tuple> results = eventRepository.countEventsByPriorityInCurrentYear();
+    public List<EventResponse> countEventsByPriorityInCurrentYear(Long userId) {
+        List<Tuple> results = eventRepository.countEventsByPriorityInCurrentYear(userId);
         return results.stream()
                 .map(tuple -> EventResponse.builder()
                         .priority(tuple.get("priorityLevel", String.class))
-                        .taskId(tuple.get("eventCount", Long.class))
+                        .title(tuple.get("eventCount", Long.class).toString())
                         .build())
                 .toList();
     }
@@ -639,11 +639,11 @@ public class TaskServiceImpl implements TaskService {
     private OffsetDateTime toOffsetDateTime(Object value) {
         if (value == null) return null;
         if (value instanceof OffsetDateTime) return (OffsetDateTime) value;
-        if (value instanceof java.time.Instant) return ((java.time.Instant) value).atOffset(java.time.ZoneOffset.UTC);
-        if (value instanceof java.sql.Timestamp) return ((java.sql.Timestamp) value).toInstant().atOffset(java.time.ZoneOffset.UTC);
+        if (value instanceof java.time.Instant) return ((java.time.Instant) value).atOffset(java.time.ZoneOffset.ofHours(7));
+        if (value instanceof java.sql.Timestamp) return ((java.sql.Timestamp) value).toInstant().atOffset(java.time.ZoneOffset.ofHours(7));
         if (value instanceof String) {
             try {
-                return OffsetDateTime.parse((String) value);
+                return OffsetDateTime.parse((String) value).withOffsetSameInstant(java.time.ZoneOffset.ofHours(7));
             } catch (Exception ignored) {}
         }
         return null;

@@ -17,48 +17,52 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     boolean existsByTaskId(Long taskId);
     List<Event> findByTaskIdIn(List<Long> taskIds);
 
-    // Count total events in current year
+    // Count total events in current year for user
     @Query(value = """
         SELECT COUNT(e.event_id)
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
-        WHERE EXTRACT(YEAR FROM t.start_time) = EXTRACT(YEAR FROM CURRENT_DATE)
+        WHERE t.user_id = :userId
+        AND EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok') = EXTRACT(YEAR FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')
         """, nativeQuery = true)
-    Long countEventsInCurrentYear();
+    Long countEventsInCurrentYear(@Param("userId") Long userId);
 
-    // Count personal events (no invited emails = personal event)
+    // Count personal events (no invited emails = personal event) for user
     @Query(value = """
         SELECT COUNT(e.event_id)
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
-        WHERE EXTRACT(YEAR FROM t.start_time) = EXTRACT(YEAR FROM CURRENT_DATE)
+        WHERE t.user_id = :userId
+        AND EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok') = EXTRACT(YEAR FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')
         AND (e.invited_emails IS NULL OR e.invited_emails = '' OR e.invited_emails = '[]')
         """, nativeQuery = true)
-    Long countPersonalEventsInCurrentYear();
+    Long countPersonalEventsInCurrentYear(@Param("userId") Long userId);
 
-    // Count group events (has invited emails = group event)
+    // Count group events (has invited emails = group event) for user
     @Query(value = """
         SELECT COUNT(e.event_id)
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
-        WHERE EXTRACT(YEAR FROM t.start_time) = EXTRACT(YEAR FROM CURRENT_DATE)
+        WHERE t.user_id = :userId
+        AND EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok') = EXTRACT(YEAR FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')
         AND e.invited_emails IS NOT NULL
         AND e.invited_emails != ''
         AND e.invited_emails != '[]'
         """, nativeQuery = true)
-    Long countGroupEventsInCurrentYear();
+    Long countGroupEventsInCurrentYear(@Param("userId") Long userId);
 
-    // Count events by priority in current year
+    // Count events by priority in current year for user
     @Query(value = """
         SELECT t.priority as priorityLevel, COUNT(e.event_id) as eventCount
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
-        WHERE EXTRACT(YEAR FROM t.start_time) = EXTRACT(YEAR FROM CURRENT_DATE)
+        WHERE t.user_id = :userId
+        AND EXTRACT(YEAR FROM t.start_time AT TIME ZONE 'Asia/Bangkok') = EXTRACT(YEAR FROM CURRENT_DATE AT TIME ZONE 'Asia/Bangkok')
         GROUP BY t.priority
         """, nativeQuery = true)
-    List<Tuple> countEventsByPriorityInCurrentYear();
+    List<Tuple> countEventsByPriorityInCurrentYear(@Param("userId") Long userId);
 
-    // Get upcoming events for user (future events sorted by start_time ASC)
+    // Get upcoming events for user (future events sorted by start_time ASC, VN timezone)
     @Query(value = """
         SELECT e.event_id as eventId, e.task_id as taskId, e.event_description as eventDescription,
                e.link_event as linkEvent, e.location as location, e.is_online as isOnline,
@@ -69,13 +73,13 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
         WHERE t.user_id = :userId
-        AND t.start_time > CURRENT_TIMESTAMP
-        ORDER BY t.start_time ASC
+        AND (t.start_time AT TIME ZONE 'Asia/Bangkok') > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Bangkok')
+        ORDER BY (t.start_time AT TIME ZONE 'Asia/Bangkok') ASC
         LIMIT :limit
         """, nativeQuery = true)
     List<Tuple> findUpcomingEventsByUserId(@Param("userId") Long userId, @Param("limit") int limit);
 
-    // Get all events for user
+    // Get all events for user (VN timezone)
     @Query(value = """
         SELECT e.event_id as eventId, e.task_id as taskId, e.event_description as eventDescription,
                e.link_event as linkEvent, e.location as location, e.is_online as isOnline,
@@ -86,7 +90,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         FROM events e
         JOIN tasks t ON e.task_id = t.task_id
         WHERE t.user_id = :userId
-        ORDER BY t.start_time DESC
+        ORDER BY (t.start_time AT TIME ZONE 'Asia/Bangkok') DESC
         """, nativeQuery = true)
     List<Tuple> findAllEventsByUserId(@Param("userId") Long userId);
 

@@ -38,10 +38,10 @@ public interface TaskService {
     void syncTasksToCache(Long userId);
 
     // Event statistics
-    Long countEventsInCurrentYear();
-    Long countPersonalEventsInCurrentYear();
-    Long countGroupEventsInCurrentYear();
-    java.util.List<EventResponse> countEventsByPriorityInCurrentYear();
+    Long countEventsInCurrentYear(Long userId);
+    Long countPersonalEventsInCurrentYear(Long userId);
+    Long countGroupEventsInCurrentYear(Long userId);
+    java.util.List<EventResponse> countEventsByPriorityInCurrentYear(Long userId);
     java.util.List<EventResponse> getUpcomingEvents(Long userId, Integer limit);
     java.util.List<EventResponse> getAllEventsByUser(Long userId);
     TaskResponse deleteEvent(Long taskId, Long eventId, Long userId);

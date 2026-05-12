@@ -200,10 +200,10 @@ public class TaskController {
     @GetMapping("/events/statistics/year")
     public ResponseEntity<?> getEventStatisticsYear(@AuthenticationPrincipal Jwt jwt) {
         Long userId = Long.parseLong(jwt.getSubject());
-        Long total = taskService.countEventsInCurrentYear();
-        Long personal = taskService.countPersonalEventsInCurrentYear();
-        Long group = taskService.countGroupEventsInCurrentYear();
-        List<EventResponse> byPriority = taskService.countEventsByPriorityInCurrentYear();
+        Long total = taskService.countEventsInCurrentYear(userId);
+        Long personal = taskService.countPersonalEventsInCurrentYear(userId);
+        Long group = taskService.countGroupEventsInCurrentYear(userId);
+        List<EventResponse> byPriority = taskService.countEventsByPriorityInCurrentYear(userId);
         return ResponseEntity.ok(java.util.Map.of(
                 "totalEvents", total,
                 "personalEvents", personal,
