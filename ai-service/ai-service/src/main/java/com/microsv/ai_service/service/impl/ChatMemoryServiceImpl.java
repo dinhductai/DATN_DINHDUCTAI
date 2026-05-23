@@ -3,6 +3,7 @@ package com.microsv.ai_service.service.impl;
 import com.microsv.ai_service.client.TaskClient;
 import com.microsv.ai_service.dto.response.TaskResponse;
 import com.microsv.ai_service.entity.ConversationMemory;
+import com.microsv.ai_service.grpc.TaskGrpcClient;
 import com.microsv.ai_service.repository.ConversationMemoryRepository;
 import com.microsv.ai_service.service.ConversationMemoryService;
 import com.microsv.ai_service.util.NullUtil;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemoryService {
     private final ConversationMemoryRepository conversationMemoryRepository;
     private final TaskClient taskClient;
+    private final TaskGrpcClient taskGrpcClient;
     private final org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
 
     public static final String MODE1_PREFIX = "1_";
@@ -107,10 +109,22 @@ public class ChatMemoryServiceImpl implements ChatMemory , ConversationMemorySer
                     20   // limit 20 tasks
             );
         } catch (Exception e) {
-            // Fallback: thử lấy tất cả nếu filter fails
+            // Fallback 1: thử gRPC (GET /internal/tasks)
+            try {
+                List<TaskResponse> grpcTasks = taskGrpcClient.getTasks(userId);
+                if (grpcTasks != null && !grpcTasks.isEmpty()) {
+                    log.debug("gRPC fallback succeeded for userId={}", userId);
+                    return grpcTasks;
+                }
+            } catch (Exception grpcEx) {
+                log.warn("gRPC fallback failed for userId={}: {}", userId, grpcEx.getMessage());
+            }
+
+            // Fallback 2: thử REST (GET /internal/tasks)
             try {
                 return taskClient.getUserTasks(userId);
             } catch (Exception ex) {
+                log.warn("All task fetch methods failed for userId={}", userId);
                 return List.of();
             }
         }

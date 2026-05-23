@@ -321,6 +321,7 @@ services:
     hostname: task-service
     ports:
       - "9007:9007"
+      - "9090:9090"
     networks:
       - smart-schedule-network
     environment:
@@ -338,6 +339,7 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - GRPC_SERVER_PORT=${GRPC_SERVER_PORT:-9090}
     depends_on:
       postgres-task-db:
         condition: service_healthy
@@ -370,6 +372,9 @@ services:
       - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_AI_OPENAI_API_KEY=${SPRING_AI_OPENAI_API_KEY}
+      - GRPC_ENABLED=${GRPC_ENABLED:-false}
+      - GRPC_TASK_SERVICE_HOST=${GRPC_TASK_SERVICE_HOST:-task-service}
+      - GRPC_TASK_SERVICE_PORT=${GRPC_TASK_SERVICE_PORT:-9090}
     depends_on:
       postgres-ai-db:
         condition: service_healthy

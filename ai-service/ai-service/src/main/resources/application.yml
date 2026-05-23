@@ -40,3 +40,10 @@ eureka:
 
 jwt:
   secret: ${JWT_SECRET}
+
+grpc:
+  task-service:
+    # Set to true to use gRPC, false to use REST (Feign)
+    enabled: ${GRPC_ENABLED:false}
+    host: ${GRPC_TASK_SERVICE_HOST:task-service}
+    port: ${GRPC_TASK_SERVICE_PORT:9090}

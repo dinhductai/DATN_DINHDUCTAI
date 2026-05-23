@@ -33,7 +33,7 @@ COPY --from=build /app/task-service/target/*.jar app.jar
 RUN chown spring:spring app.jar
 USER spring
 
-EXPOSE 9007
+EXPOSE 9007 9090
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:9007/actuator/health || exit 1

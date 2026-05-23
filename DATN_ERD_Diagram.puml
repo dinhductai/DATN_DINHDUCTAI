@@ -4,163 +4,121 @@ skinparam backgroundColor #FFFFFF
 skinparam linetype ortho
 
 ' ===============================================
-' DATN MICROSERVICES - ENTITY RELATIONSHIP DIAGRAM
+' DATN - ENTITY RELATIONSHIP DIAGRAM
 ' ===============================================
 
-' --------------- auth-service ----------------
-
-package "auth_service" {
-
-    entity "invalidated_token" as itoken {
-        * **id**: VARCHAR
-        --
-        * token: VARCHAR
-        * expiry_time: TIMESTAMP
-    }
+entity "invalidated_token" as itoken {
+    * **id**: VARCHAR
+    --
+    * token: VARCHAR
+    * expiry_time: TIMESTAMP
 }
 
-' --------------- user-service ----------------
-
-package "user_service" {
-
-    entity "users" as users {
-        * **user_id**: BIGINT
-        --
-        * userName: VARCHAR
-        * password: VARCHAR
-        * email: VARCHAR
-        * profile: VARCHAR
-        * created_at: TIMESTAMPTZ
-    }
-
-    entity "roles" as roles {
-        * **role_id**: BIGINT
-        --
-        * role_name: VARCHAR
-    }
-
-    entity "permissions" as permissions {
-        * **permission_id**: BIGINT
-        --
-        * permission_name: VARCHAR
-    }
-
-    entity "users_roles" as users_roles <<join-table>> {
-        * **user_id**: BIGINT
-        * **role_id**: BIGINT
-    }
-
-    entity "roles_permissions" as roles_permissions <<join-table>> {
-        * **role_id**: BIGINT
-        * **permission_id**: BIGINT
-    }
+entity "users" as users {
+    * **user_id**: BIGINT
+    --
+    * userName: VARCHAR
+    * password: VARCHAR
+    * email: VARCHAR
+    * profile: VARCHAR
+    * created_at: TIMESTAMPTZ
 }
 
-' --------------- task-service ----------------
-
-package "task_service" {
-
-    entity "tasks" as tasks {
-        * **task_id**: BIGINT
-        --
-        * title: VARCHAR
-        * description: TEXT
-        * deadline: TIMESTAMPTZ
-        * status: VARCHAR
-        * priority: VARCHAR
-        * start_time: TIMESTAMPTZ
-        * completed_at: TIMESTAMPTZ
-        * user_id: BIGINT
-        * created_at: TIMESTAMPTZ
-    }
-
-    entity "notifications" as notifications {
-        * **notification_id**: BIGINT
-        --
-        * user_id: BIGINT
-        * task_id: BIGINT
-        * title: VARCHAR
-        * content: TEXT
-        * is_read: BOOLEAN
-        * created_at: TIMESTAMPTZ
-    }
-
-    entity "events" as events {
-        * **event_id**: BIGINT
-        --
-        * task_id: BIGINT
-        * event_description: TEXT
-        * link_event: VARCHAR
-        * location: VARCHAR
-        * is_online: BOOLEAN
-        * reminder_minutes_before: INT
-    }
+entity "roles" as roles {
+    * **role_id**: BIGINT
+    --
+    * role_name: VARCHAR
 }
 
-' --------------- ai-service ----------------
-
-package "ai_service" {
-
-    entity "conversation_memory" as conv_memory {
-        * **chat_id**: BIGINT
-        --
-        * user_id: BIGINT
-        * conversation_id: VARCHAR
-        * role: VARCHAR
-        * content: VARCHAR
-        * create_at: TIMESTAMPTZ
-    }
+entity "permissions" as permissions {
+    * **permission_id**: BIGINT
+    --
+    * permission_name: VARCHAR
 }
 
-' --------------- email-service ----------------
-
-package "email_service" {
-
-    entity "emails" as emails {
-        * **id**: BIGINT
-        --
-        * user_id: BIGINT
-        * to_email: VARCHAR
-        * subject: VARCHAR
-        * body: TEXT
-        * status: VARCHAR
-        * error_message: TEXT
-        * created_at: TIMESTAMPTZ
-        * sent_at: TIMESTAMPTZ
-    }
-
-    entity "event_invitations" as event_invitations {
-        * **id**: BIGINT
-        --
-        * event_id: BIGINT
-        * invited_email: VARCHAR
-        * status: VARCHAR
-        * sent_at: TIMESTAMPTZ
-    }
+entity "users_roles" as users_roles <<join-table>> {
+    * **user_id**: BIGINT
+    * **role_id**: BIGINT
 }
 
+entity "roles_permissions" as roles_permissions <<join-table>> {
+    * **role_id**: BIGINT
+    * **permission_id**: BIGINT
+}
 
-' --------------- RELATIONSHIPS ----------------
+entity "tasks" as tasks {
+    * **task_id**: BIGINT
+    --
+    * title: VARCHAR
+    * description: TEXT
+    * deadline: TIMESTAMPTZ
+    * status: VARCHAR
+    * priority: VARCHAR
+    * start_time: TIMESTAMPTZ
+    * completed_at: TIMESTAMPTZ
+    * user_id: BIGINT
+    * created_at: TIMESTAMPTZ
+}
 
-' Within each service (solid line = real FK)
+entity "notifications" as notifications {
+    * **notification_id**: BIGINT
+    --
+    * user_id: BIGINT
+    * task_id: BIGINT
+    * title: VARCHAR
+    * content: TEXT
+    * is_read: BOOLEAN
+    * created_at: TIMESTAMPTZ
+}
+
+entity "events" as events {
+    * **event_id**: BIGINT
+    --
+    * task_id: BIGINT
+    * event_description: TEXT
+    * link_event: VARCHAR
+    * location: VARCHAR
+    * is_online: BOOLEAN
+    * reminder_minutes_before: INT
+}
+
+entity "conversation_memory" as conv_memory {
+    * **chat_id**: BIGINT
+    --
+    * user_id: BIGINT
+    * conversation_id: VARCHAR
+    * role: VARCHAR
+    * content: VARCHAR
+    * create_at: TIMESTAMPTZ
+}
+
+entity "emails" as emails {
+    * **id**: BIGINT
+    --
+    * user_id: BIGINT
+    * to_email: VARCHAR
+    * subject: VARCHAR
+    * body: TEXT
+    * status: VARCHAR
+    * error_message: TEXT
+    * created_at: TIMESTAMPTZ
+    * sent_at: TIMESTAMPTZ
+}
+
+entity "event_invitations" as event_invitations {
+    * **id**: BIGINT
+    --
+    * event_id: BIGINT
+    * invited_email: VARCHAR
+    * status: VARCHAR
+    * sent_at: TIMESTAMPTZ
+}
+
 users ||--o{ users_roles
 roles ||--o{ users_roles
 roles ||--o{ roles_permissions
 permissions ||--o{ roles_permissions
 tasks ||--|| notifications
 tasks ||--|| events
-
-' Cross-service (dashed line = denormalized reference, no FK constraint)
-users .. tasks
-users .. notifications
-users .. conv_memory
-users .. emails
-events .. event_invitations
-
-legend left
-|= LOẠI ĐƯỜNG |= Ý NGHĨA |
-|= **————** | Quan hệ ràng buộc giữa các bảng trong cùng 1 service |
-|= **- - - - -** | Quan hệ mức logic, chỉ lưu ID để làm tham chiếu, không có quan hệ ràng buộc |
-endlegend
 
 @enduml
